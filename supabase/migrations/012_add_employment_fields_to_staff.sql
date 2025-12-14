@@ -1,0 +1,2 @@
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS employment_type TEXT;
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS service_status TEXT DEFAULT 'Active';

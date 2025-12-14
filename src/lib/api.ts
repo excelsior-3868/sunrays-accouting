@@ -124,6 +124,27 @@ export const createFeeStructure = async (
     return stData;
 };
 
+export const updateFeeStructure = async (id: string, updates: Partial<FeeStructure>) => {
+    const { data, error } = await supabase
+        .from('fee_structures')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as FeeStructure;
+};
+
+export const deleteFeeStructure = async (id: string) => {
+    const { error } = await supabase
+        .from('fee_structures')
+        .delete()
+        .eq('id', id);
+
+    if (error) throw error;
+};
+
 /* -------------------------------------------------------------------------- */
 /*                                   Invoices                                 */
 /* -------------------------------------------------------------------------- */
@@ -171,6 +192,22 @@ export const createInvoice = async (
     return invData;
 };
 
+export const getStudentUnpaidStats = async (studentId: string, beforeDate: string) => {
+    const { data, error } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('student_id', studentId)
+        .eq('status', 'Unpaid')
+        .lt('created_at', beforeDate);
+
+    if (error) throw error;
+
+    const amount = data.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
+    const months = [...new Set(data.map(inv => inv.month).filter(Boolean))].join(', ');
+
+    return { amount, months };
+};
+
 /* -------------------------------------------------------------------------- */
 /*                                   Payments                                 */
 /* -------------------------------------------------------------------------- */
@@ -184,7 +221,62 @@ export const recordPayment = async (payment: Omit<Payment, 'id' | 'created_at' |
 
     if (error) throw error;
 
-    await supabase.from('invoices').update({ status: 'Paid' }).eq('id', payment.invoice_id);
+    if (error) throw error;
+
+    // 1. Mark Current Invoice as Paid
+    const { data: currentInvoice, error: fetchError } = await supabase
+        .from('invoices')
+        .update({ status: 'Paid' })
+        .eq('id', payment.invoice_id)
+        .select()
+        .single();
+
+    if (fetchError) throw fetchError;
+
+    // 2. Cascade Clean-up: Mark all PREVIOUS invoices for this student as 'Paid'
+    // AND create transaction records for them.
+    if (currentInvoice) {
+        // Fetch older unpaid invoices
+        const { data: previousInvoices } = await supabase
+            .from('invoices')
+            .select('*')
+            .eq('student_id', currentInvoice.student_id)
+            .neq('id', currentInvoice.id)
+            .lt('created_at', currentInvoice.created_at)
+            .eq('status', 'Unpaid');
+
+        if (previousInvoices && previousInvoices.length > 0) {
+            // Prepare payment records for backlog
+            const backlogPayments = previousInvoices.map(inv => ({
+                invoice_id: inv.id,
+                amount: inv.total_amount, // Assuming full payment
+                payment_date: payment.payment_date,
+                fiscal_year_id: payment.fiscal_year_id,
+                payment_mode_gl_id: payment.payment_mode_gl_id,
+                remarks: `Backlog cleared via payment for ${currentInvoice.invoice_number} (${currentInvoice.month || ''})`
+            }));
+
+            // Insert payments
+            const { error: payError } = await supabase
+                .from('payments')
+                .insert(backlogPayments);
+
+            if (payError) {
+                console.error('Error creating backlog payments:', payError);
+            } else {
+                // Update statuses to Paid
+                const invoiceIds = previousInvoices.map(i => i.id);
+                const { error: updateError } = await supabase
+                    .from('invoices')
+                    .update({ status: 'Paid' })
+                    .in('id', invoiceIds);
+
+                if (updateError) {
+                    console.error('Error updating backlog invoice statuses:', updateError);
+                }
+            }
+        }
+    }
 
     return data;
 };
@@ -259,6 +351,42 @@ export const createSalaryStructure = async (
     if (itemsError) throw itemsError;
 
     return stData;
+};
+
+export const updateSalaryStructure = async (id: string, structure: Partial<SalaryStructure>, items: any[]) => {
+    const { error: stError } = await supabase
+        .from('salary_structures')
+        .update({
+            employee_id: structure.employee_id,
+            employee_name: structure.employee_name,
+            fiscal_year_id: structure.fiscal_year_id
+        })
+        .eq('id', id);
+
+    if (stError) throw stError;
+
+    // Replace items
+    const { error: delError } = await supabase
+        .from('salary_structure_items')
+        .delete()
+        .eq('salary_structure_id', id);
+
+    if (delError) throw delError;
+
+    if (items.length > 0) {
+        const { error: itemError } = await supabase
+            .from('salary_structure_items')
+            .insert(items.map(i => ({ ...i, salary_structure_id: id })));
+        if (itemError) throw itemError;
+    }
+};
+
+export const deleteSalaryStructure = async (id: string) => {
+    const { error } = await supabase
+        .from('salary_structures')
+        .delete()
+        .eq('id', id);
+    if (error) throw error;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -340,6 +468,55 @@ export const getPayrollRunDetails = async (id: string) => {
     return data; // Typed casually
 };
 
+export const approvePayrollRun = async (runId: string) => {
+    // 1. Get Payslips
+    const { data: run, error: runError } = await supabase
+        .from('payroll_runs')
+        .select('*, payslips(*)')
+        .eq('id', runId)
+        .single();
+
+    if (runError) throw runError;
+    if (run.is_posted) throw new Error('Payroll run already posted.');
+
+    // 2. Get GL Heads
+    const { data: cashMethods } = await supabase.from('gl_heads').select('id, name').ilike('name', '%Cash%').limit(1);
+    if (!cashMethods || cashMethods.length === 0) throw new Error('Cash GL Head not found for payment (searched for "%Cash%").');
+    const cashHeadId = cashMethods[0].id;
+
+    // Get a fallback Expense Head (try 'Salar...' first, then any Expense)
+    const { data: salaryHeads } = await supabase.from('gl_heads').select('id, name').ilike('name', '%Salar%').eq('type', 'Expense').limit(1);
+    let salaryHeadId = '';
+
+    if (salaryHeads && salaryHeads.length > 0) {
+        salaryHeadId = salaryHeads[0].id;
+    } else {
+        const { data: anyExpense } = await supabase.from('gl_heads').select('id').eq('type', 'Expense').limit(1);
+        if (!anyExpense || anyExpense.length === 0) throw new Error('No Expense GL Head found to book salaries against.');
+        salaryHeadId = anyExpense[0].id;
+    }
+
+    // 3. Create Expenses
+    for (const slip of run.payslips) {
+        await createExpense({
+            expense_date: new Date().toISOString(), // Payment Date
+            amount: slip.net_salary,
+            description: `Salary Payment for ${slip.employee_name} - ${run.month}`,
+            expense_head_id: salaryHeadId,
+            payment_mode_gl_id: cashHeadId,
+            fiscal_year_id: run.fiscal_year_id
+        });
+    }
+
+    // 4. Update Run Status
+    const { error: updateError } = await supabase
+        .from('payroll_runs')
+        .update({ is_posted: true })
+        .eq('id', runId);
+
+    if (updateError) throw updateError;
+};
+
 /* -------------------------------------------------------------------------- */
 /*                               Students & Teachers                          */
 /* -------------------------------------------------------------------------- */
@@ -362,4 +539,36 @@ export const getTeachers = async () => {
 
     if (error) throw error;
     return data as import('../types').Teacher[];
+};
+
+export const createTeacher = async (teacher: Omit<import('../types').Teacher, 'id' | 'created_at'>) => {
+    const { data, error } = await schoolSupabase
+        .from('teachers')
+        .insert([teacher])
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
+};
+
+export const getStaffMembers = async () => {
+    const { data, error } = await supabase
+        .from('staff')
+        .select('*')
+        .order('first_name');
+
+    if (error) throw error;
+    return data as import('../types').Staff[];
+};
+
+export const createStaffMember = async (staff: Omit<import('../types').Staff, 'id' | 'created_at'>) => {
+    const { data, error } = await supabase
+        .from('staff')
+        .insert([staff])
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
 };

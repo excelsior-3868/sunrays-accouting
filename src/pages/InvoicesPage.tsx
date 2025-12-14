@@ -6,6 +6,7 @@ import { type Invoice, type FeeStructure, type FiscalYear, type Student } from '
 
 export default function InvoicesPage() {
     const navigate = useNavigate();
+    // Initialize with empty arrays to prevent "map of undefined" errors
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -28,20 +29,36 @@ export default function InvoicesPage() {
     // Generation Mode State
     const [generationMode, setGenerationMode] = useState<'individual' | 'batch'>('individual');
 
+    // List Filter State
+    const [listSearch, setListSearch] = useState('');
+    const [monthFilter, setMonthFilter] = useState('');
+    const [classFilter, setClassFilter] = useState('');
+
     const fetchData = async () => {
         try {
+            console.log('Fetching invoice data...');
             const [invData, stData, fyData, studData] = await Promise.all([
                 getInvoices(),
                 getFeeStructures(),
                 getFiscalYears(),
                 getStudents()
             ]);
-            setInvoices(invData);
-            setFeeStructures(stData);
-            setFiscalYears(fyData.filter(fy => fy.is_active)); // Only active year for creation
-            setAllStudents(studData);
+
+            // Critical Safety Checks: Ensure we never set state to null/undefined
+            setInvoices(invData || []);
+            setFeeStructures(stData || []);
+            setFiscalYears((fyData || []).filter(fy => fy.is_active));
+            setAllStudents(studData || []);
+
+            console.log('Data loaded:', {
+                invoices: invData?.length,
+                students: studData?.length
+            });
         } catch (error) {
             console.error('Error fetching data:', error);
+            // Even on error, ensure states are empty arrays, not null
+            setInvoices([]);
+            setAllStudents([]);
         } finally {
             setLoading(false);
         }
@@ -73,10 +90,41 @@ export default function InvoicesPage() {
 
         const fyId = formData.get('fiscal_year_id') as string;
         const dueDate = formData.get('due_date') as string;
+        const month = formData.get('month') as string;
 
         try {
+            const isInvoiceBlocked = (studentId: string) => {
+                return (invoices || []).some(inv => {
+                    if (inv.student_id !== studentId) return false;
+
+                    // Block ONLY if invoice already exists for this Month & Fiscal Year
+                    if (inv.month === month && inv.fiscal_year_id === fyId) return true;
+
+                    return false;
+                });
+            };
+
+            const calculatePreviousDues = (studentId: string) => {
+                const studentInvoices = (invoices || []).filter(inv =>
+                    inv.student_id === studentId &&
+                    inv.status !== 'Paid'
+                );
+
+                const amount = studentInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
+                const months = [...new Set(studentInvoices.map(inv => inv.month).filter(Boolean))].join(', ');
+
+                return { amount, months };
+            };
+
             if (generationMode === 'individual') {
                 if (!selectedStudent) return;
+
+                if (isInvoiceBlocked(selectedStudent.id)) {
+                    alert(`Cannot create invoice: ${selectedStudent.name} already has an invoice for ${month}.`);
+                    return;
+                }
+
+                const prevDues = calculatePreviousDues(selectedStudent.id);
 
                 const newInvoice = {
                     student_id: selectedStudent.id,
@@ -85,6 +133,9 @@ export default function InvoicesPage() {
                     invoice_number: `INV-${Date.now()}`,
                     total_amount: structure.amount,
                     due_date: dueDate,
+                    month: month,
+                    previous_dues: prevDues.amount,
+                    previous_dues_months: prevDues.months,
                     status: 'Unpaid' as const,
                 };
 
@@ -95,6 +146,7 @@ export default function InvoicesPage() {
                 }));
 
                 await createInvoice(newInvoice, items);
+                alert('Invoice created successfully.');
             } else {
                 // Batch Generation
                 if (!structure.class_name) {
@@ -102,18 +154,24 @@ export default function InvoicesPage() {
                     return;
                 }
 
-                const studentsInClass = allStudents.filter(s => s.class === structure.class_name);
+                const studentsInClass = (allStudents || []).filter(s => s.class === structure.class_name);
 
                 if (studentsInClass.length === 0) {
                     alert(`No students found for class ${structure.class_name}`);
                     return;
                 }
 
-                // Generate invoices sequentially to avoid overwhelming the server/rate limits
-                // or parallel if confident. Let's do sequential for safety and unique invoice numbers.
                 let successCount = 0;
+                let skippedCount = 0;
 
                 for (const student of studentsInClass) {
+                    if (isInvoiceBlocked(student.id)) {
+                        skippedCount++;
+                        continue;
+                    }
+
+                    const prevDues = calculatePreviousDues(student.id);
+
                     const newInvoice = {
                         student_id: student.id,
                         student_name: student.name,
@@ -121,6 +179,9 @@ export default function InvoicesPage() {
                         invoice_number: `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`, // Ensure unique
                         total_amount: structure.amount,
                         due_date: dueDate,
+                        month: month,
+                        previous_dues: prevDues.amount,
+                        previous_dues_months: prevDues.months,
                         status: 'Unpaid' as const,
                     };
 
@@ -133,7 +194,7 @@ export default function InvoicesPage() {
                     await createInvoice(newInvoice, items);
                     successCount++;
                 }
-                alert(`Successfully generated ${successCount} invoices for class ${structure.class_name}`);
+                alert(`Batch Generation Complete:\n- Generated: ${successCount}\n- Skipped (Already has unpaid invoice): ${skippedCount}`);
             }
 
             setIsDialogOpen(false);
@@ -149,18 +210,81 @@ export default function InvoicesPage() {
         }
     };
 
-    const filteredStudents = allStudents.filter(student =>
-        student.name.toLowerCase().includes(studentSearch.toLowerCase()) ||
-        (student.roll_number && student.roll_number.toString().includes(studentSearch))
-    );
+    const modalFilteredStudents = (allStudents || []).filter(student => {
+        // Robust safety check for student properties
+        if (!student) return false;
+        const name = student.name || '';
+        const roll = student.roll_number ? student.roll_number.toString() : '';
+        const search = studentSearch.toLowerCase();
+        return name.toLowerCase().includes(search) || roll.includes(search);
+    });
+
+    // Filter invoices for display
+    const filteredInvoices = (invoices || []).filter(inv => {
+        const student = (allStudents || []).find(s => s.id === inv.student_id);
+        const studentClass = student?.class?.toLowerCase() || '';
+
+        // 1. Search Text (Student Name or Invoice Number)
+        if (listSearch.trim()) {
+            const term = listSearch.toLowerCase();
+            const studentName = inv.student_name?.toLowerCase() || '';
+            if (!studentName.includes(term) && !inv.invoice_number.toLowerCase().includes(term)) return false;
+        }
+
+        // 2. Month Filter
+        if (monthFilter && inv.month !== monthFilter) return false;
+
+        // 3. Class Filter
+        if (classFilter && studentClass !== classFilter.toLowerCase()) return false;
+
+        return true;
+    });
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <h1 className="text-2xl font-bold tracking-tight">Invoices</h1>
-                <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
-                    <Plus className="mr-2 h-4 w-4" /> Create Invoice
-                </button>
+
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto items-end">
+                    {/* Class Filter */}
+                    <select
+                        value={classFilter}
+                        onChange={(e) => setClassFilter(e.target.value)}
+                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                        <option value="">All Classes</option>
+                        {['PG', 'Nursery', 'LKG', 'UKG'].map(c => (
+                            <option key={c} value={c}>Class {c}</option>
+                        ))}
+                    </select>
+
+                    {/* Month Filter */}
+                    <select
+                        value={monthFilter}
+                        onChange={(e) => setMonthFilter(e.target.value)}
+                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                        <option value="">All Months</option>
+                        {['Baisakh', 'Jestha', 'Asar', 'Shrawan', 'Bhadra', 'Ashwin', 'Kartik', 'Mangsir', 'Poush', 'Magh', 'Falgun', 'Chaitra'].map(m => (
+                            <option key={m} value={m}>{m}</option>
+                        ))}
+                    </select>
+
+                    <div className="relative">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <input
+                            type="search"
+                            placeholder="Student or Invoice #..."
+                            value={listSearch}
+                            onChange={(e) => setListSearch(e.target.value)}
+                            className="flex h-10 w-full rounded-md border border-input bg-background pl-9 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-[350px]"
+                        />
+                    </div>
+
+                    <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
+                        <Plus className="mr-2 h-4 w-4" /> Create Invoice
+                    </button>
+                </div>
             </div>
 
             {loading ? (
@@ -172,13 +296,15 @@ export default function InvoicesPage() {
                             <tr className="border-b transition-colors hover:bg-muted/50">
                                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Invoice #</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Student</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Class</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Month</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Date</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Amount</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {invoices.map((inv) => (
+                            {filteredInvoices.map((inv) => (
                                 <tr
                                     key={inv.id}
                                     className="border-b transition-colors hover:bg-muted/50 cursor-pointer"
@@ -191,6 +317,12 @@ export default function InvoicesPage() {
                                             <span className="text-xs text-muted-foreground">{inv.student_id}</span>
                                         </div>
                                     </td>
+                                    <td className="p-4 align-middle">
+                                        <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                                            {(allStudents || []).find(s => s.id === inv.student_id)?.class || '-'}
+                                        </span>
+                                    </td>
+                                    <td className="p-4 align-middle">{inv.month || '-'}</td>
                                     <td className="p-4 align-middle">{inv.created_at?.split('T')[0]}</td>
                                     <td className="p-4 align-middle">NPR {inv.total_amount}</td>
                                     <td className="p-4 align-middle">
@@ -203,13 +335,14 @@ export default function InvoicesPage() {
                                     </td>
                                 </tr>
                             ))}
-                            {invoices.length === 0 && (
-                                <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">No invoices found.</td></tr>
+                            {filteredInvoices.length === 0 && (
+                                <tr><td colSpan={7} className="p-4 text-center text-muted-foreground">No invoices found.</td></tr>
                             )}
                         </tbody>
                     </table>
                 </div>
             )}
+
 
             {isDialogOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -287,10 +420,10 @@ export default function InvoicesPage() {
                                                         className="flex h-10 w-full rounded-md border border-input bg-background pl-8 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                                     />
                                                 </div>
-                                                {isSearchOpen && studentSearch.length > 0 && (
+                                                {isSearchOpen && (
                                                     <div className="absolute z-10 w-full mt-1 bg-popover text-popover-foreground rounded-md border shadow-md animate-in fade-in-0 zoom-in-95 max-h-[200px] overflow-y-auto">
-                                                        {filteredStudents.length > 0 ? (
-                                                            filteredStudents.map(student => (
+                                                        {modalFilteredStudents.length > 0 ? (
+                                                            modalFilteredStudents.map(student => (
                                                                 <div
                                                                     key={student.id}
                                                                     className="flex flex-col p-2 hover:bg-muted cursor-pointer text-sm"
@@ -342,16 +475,32 @@ export default function InvoicesPage() {
                                     )}
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Due Date</label>
-                                    <input
-                                        type="date"
-                                        name="due_date"
-                                        required
-                                        value={invoiceDueDate}
-                                        onChange={(e) => setInvoiceDueDate(e.target.value)}
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Month (Nepali)</label>
+                                        <select
+                                            name="month"
+                                            required
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                        >
+                                            <option value="">Select Month</option>
+                                            {['Baisakh', 'Jestha', 'Asar', 'Shrawan', 'Bhadra', 'Ashwin', 'Kartik', 'Mangsir', 'Poush', 'Magh', 'Falgun', 'Chaitra'].map(m => (
+                                                <option key={m} value={m}>{m}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Due Date</label>
+                                        <input
+                                            type="date"
+                                            name="due_date"
+                                            required
+                                            value={invoiceDueDate}
+                                            onChange={(e) => setInvoiceDueDate(e.target.value)}
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
@@ -361,7 +510,6 @@ export default function InvoicesPage() {
                                     {generationMode === 'batch' ? 'Generate Batch Invoices' : 'Create Invoice'}
                                 </button>
                             </div>
-
                         </form>
                     </div>
                 </div>

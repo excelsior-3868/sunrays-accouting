@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, ArrowLeft, CreditCard, Printer } from 'lucide-react';
-import { getInvoiceById, recordPayment, getFiscalYears, getGLHeads } from '@/lib/api';
+import { getInvoiceById, recordPayment, getFiscalYears, getGLHeads, getStudentUnpaidStats } from '@/lib/api';
 import { type Invoice, type FiscalYear, type GLHead } from '@/types';
 
 export default function InvoiceDetailsPage() {
@@ -10,6 +10,9 @@ export default function InvoiceDetailsPage() {
     const [invoice, setInvoice] = useState<Invoice | null>(null);
     const [loading, setLoading] = useState(true);
     const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+
+    // Live calculation of previous dues
+    const [stats, setStats] = useState<{ amount: number, months: string }>({ amount: 0, months: '' });
 
     // Data for payment form
     const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([]);
@@ -25,8 +28,14 @@ export default function InvoiceDetailsPage() {
             ]);
             setInvoice(data);
             setFiscalYears(fyData.filter(fy => fy.is_active));
-            // Filter Asset heads for Cash/Bank
             setPaymentModes(glData.filter(h => h.type === 'Asset'));
+
+            if (data && data.created_at) {
+                // Fetch live stats for previous dues
+                const liveStats = await getStudentUnpaidStats(data.student_id, data.created_at);
+                setStats(liveStats);
+            }
+
         } catch (error) {
             console.error('Error fetching invoice:', error);
         } finally {
@@ -64,6 +73,11 @@ export default function InvoiceDetailsPage() {
     if (loading) return <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
     if (!invoice) return <div>Invoice not found</div>;
 
+    // Use live stats if available, otherwise fallback to stored (though live should be accurate)
+    // The user explicitly wants "if Month 1 is clear, don't show". Live stats handle this.
+    const effectivePrevDues = stats.amount;
+    const effectivePrevMonths = stats.months;
+
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
@@ -98,6 +112,10 @@ export default function InvoiceDetailsPage() {
                             <span className="text-muted-foreground">Due Date</span>
                             <span className="font-medium">{invoice.due_date}</span>
                         </div>
+                        <div className="flex justify-between py-1 border-b">
+                            <span className="text-muted-foreground">Month</span>
+                            <span className="font-medium">{invoice.month || '-'}</span>
+                        </div>
                     </div>
                 </div>
 
@@ -110,8 +128,22 @@ export default function InvoiceDetailsPage() {
                             </button>
                         )}
                     </h3>
-                    <div className="text-2xl font-bold">NPR {invoice.total_amount}</div>
-                    <div className="text-sm text-muted-foreground mt-1">Total Due</div>
+                    <div className="space-y-1 mb-4">
+                        <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Current Amount {invoice.month ? `(${invoice.month})` : ''}</span>
+                            <span>NPR {invoice.total_amount}</span>
+                        </div>
+                        {effectivePrevDues > 0 && (
+                            <div className="flex justify-between text-sm text-red-600">
+                                <span>Previous Dues {effectivePrevMonths ? `(${effectivePrevMonths})` : ''}</span>
+                                <span>NPR {effectivePrevDues}</span>
+                            </div>
+                        )}
+                        <div className="border-t my-2 pt-2 flex justify-between font-bold">
+                            <span>Total Payable</span>
+                            <span>NPR {invoice.total_amount + effectivePrevDues}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 

@@ -15,6 +15,7 @@ import PayrollPage from '@/pages/PayrollPage';
 import ReportsPage from '@/pages/ReportsPage';
 import StudentsPage from '@/pages/StudentsPage';
 import TeachersPage from '@/pages/TeachersPage';
+import StaffsPage from '@/pages/StaffsPage';
 
 function App() {
   return (
@@ -35,7 +36,7 @@ function App() {
             <Route path="/invoices/:id" element={<InvoiceDetailsPage />} />
             <Route path="/expenses" element={<ExpensesPage />} />
             <Route path="/salary-structures" element={<SalaryStructuresPage />} />
-            <Route path="/payroll" element={<PayrollPage />} />
+            <Route path="/settings/staffs" element={<StaffsPage />} />
             <Route path="/payroll" element={<PayrollPage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/students" element={<StudentsPage />} />

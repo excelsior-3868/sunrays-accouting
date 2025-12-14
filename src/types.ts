@@ -54,7 +54,10 @@ export type Invoice = {
     invoice_number: string;
     total_amount: number;
     due_date: string;
-    status: InvoiceStatus;
+    status: InvoiceStatus; // Unpaid, Partial, Paid, Overdue
+    month?: string; // e.g. "Baisakh"
+    previous_dues?: number;
+    previous_dues_months?: string;
     created_at?: string;
     items?: InvoiceItem[];
 };
@@ -169,6 +172,22 @@ export type Teacher = {
     last_name: string;
     email: string;
     phone?: string;
+    address?: string;
+    category?: 'Teaching Staff' | 'Support Staff';
+    designation?: string; // e.g. Cook, Helper, Cleaner
     created_at?: string;
     // Add other fields as needed
+};
+
+export type Staff = {
+    id: string;
+    first_name: string;
+    last_name: string;
+    address?: string;
+    mobile_number?: string;
+    category?: string;
+    designation?: string;
+    employment_type?: string;
+    service_status?: string;
+    created_at?: string;
 };
