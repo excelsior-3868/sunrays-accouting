@@ -139,50 +139,70 @@ export default function FeeStructuresPage() {
                 <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {structures.map((st) => (
-                        <div key={st.id} className="rounded-xl border bg-card text-card-foreground shadow relative group">
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                                <button
-                                    onClick={() => startEdit(st)}
-                                    className="p-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80"
-                                    title="Edit"
-                                >
-                                    <Pencil className="h-4 w-4" />
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(st.id)}
-                                    className="p-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90"
-                                    title="Delete"
-                                >
-                                    <Trash className="h-4 w-4" />
-                                </button>
-                            </div>
+                    {structures.map((st, index) => {
+                        // Cycle through colors for top border
+                        const colors = [
+                            'border-t-pink-500',
+                            'border-t-purple-500',
+                            'border-t-blue-500',
+                            'border-t-green-500'
+                        ];
+                        const borderColor = colors[index % colors.length];
 
-                            <div className="flex flex-col space-y-1.5 p-6">
-                                <h3 className="font-semibold leading-none tracking-tight flex justify-between pr-16 text-lg">
-                                    {st.name}
-                                </h3>
-                                <div className="flex gap-2 mt-2">
-                                    {st.class_name ? (
-                                        <span className="text-xs bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full font-medium">{st.class_name}</span>
-                                    ) : (
-                                        <span className="text-xs bg-red-100 text-red-800 px-2.5 py-0.5 rounded-full font-medium">No Class</span>
-                                    )}
-                                    <span className="text-sm font-medium text-muted-foreground">NPR {st.amount}</span>
+                        return (
+                            <div key={st.id} className={`rounded-lg border-t-4 ${borderColor} bg-white shadow-sm hover:shadow-md transition-shadow relative group`}>
+                                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 z-10">
+                                    <button
+                                        onClick={() => startEdit(st)}
+                                        className="p-1.5 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors"
+                                        title="Edit"
+                                    >
+                                        <Pencil className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(st.id)}
+                                        className="p-1.5 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition-colors"
+                                        title="Delete"
+                                    >
+                                        <Trash className="h-3.5 w-3.5" />
+                                    </button>
+                                </div>
+
+                                <div className="p-5">
+                                    <h3 className="font-bold text-lg text-gray-900 mb-3 pr-16">
+                                        {st.name}
+                                    </h3>
+
+                                    <div className="flex items-center gap-2 mb-4">
+                                        {st.class_name ? (
+                                            <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold">
+                                                {st.class_name}
+                                            </span>
+                                        ) : (
+                                            <span className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full font-semibold">
+                                                No Class
+                                            </span>
+                                        )}
+                                        <span className="text-lg font-bold text-gray-900">
+                                            NPR {st.amount.toLocaleString()}
+                                        </span>
+                                    </div>
+
+                                    <div className="border-t pt-3">
+                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Fee Components</p>
+                                        <ul className="space-y-1.5">
+                                            {st.items?.map(item => (
+                                                <li key={item.id} className="flex justify-between text-sm">
+                                                    <span className="text-gray-600">{item.gl_head?.name}</span>
+                                                    <span className="font-medium text-gray-900">NPR {item.amount}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="p-6 pt-0 text-sm text-muted-foreground">
-                                <ul className="list-disc pl-4 space-y-1">
-                                    {st.items?.map(item => (
-                                        <li key={item.id} className="flex justify-between">
-                                            <span>{item.gl_head?.name}</span>
-                                            <span>{item.amount}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                     {structures.length === 0 && (
                         <div className="col-span-full text-center text-muted-foreground py-10">
                             No fee structures defined.

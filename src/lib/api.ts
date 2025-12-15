@@ -552,6 +552,18 @@ export const createTeacher = async (teacher: Omit<import('../types').Teacher, 'i
     return data;
 };
 
+export const updateTeacher = async (id: string, updates: Partial<import('../types').Teacher>) => {
+    const { data, error } = await schoolSupabase
+        .from('teachers')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
+};
+
 export const getStaffMembers = async () => {
     const { data, error } = await supabase
         .from('staff')
@@ -571,4 +583,32 @@ export const createStaffMember = async (staff: Omit<import('../types').Staff, 'i
 
     if (error) throw error;
     return data;
+};
+
+export const updateStaffMember = async (id: string, updates: Partial<import('../types').Staff>) => {
+    const { data, error } = await supabase
+        .from('staff')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
+};
+
+/* -------------------------------------------------------------------------- */
+/*                                  GL Head Updates                           */
+/* -------------------------------------------------------------------------- */
+
+export const updateGLHead = async (id: string, updates: Partial<GLHead>) => {
+    const { data, error } = await supabase
+        .from('gl_heads')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as GLHead;
 };

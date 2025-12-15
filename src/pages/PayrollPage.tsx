@@ -8,6 +8,7 @@ export default function PayrollPage() {
     const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([]);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [statusFilter, setStatusFilter] = useState<'All' | 'Draft' | 'Posted'>('All');
 
     const fetchData = async () => {
         try {
@@ -68,13 +69,33 @@ export default function PayrollPage() {
         }
     };
 
+    const filteredRuns = runs.filter(run => {
+        if (statusFilter === 'All') return true;
+        if (statusFilter === 'Posted') return run.is_posted;
+        if (statusFilter === 'Draft') return !run.is_posted;
+        return true;
+    });
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">Payroll</h1>
-                <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
-                    <Plus className="mr-2 h-4 w-4" /> Run Payroll
-                </button>
+
+                <div className="flex items-center gap-2">
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value as any)}
+                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                        <option value="All">All Status</option>
+                        <option value="Draft">Draft (Not Paid)</option>
+                        <option value="Posted">Posted (Paid)</option>
+                    </select>
+
+                    <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
+                        <Plus className="mr-2 h-4 w-4" /> Run Payroll
+                    </button>
+                </div>
             </div>
 
             {loading ? (
@@ -91,7 +112,7 @@ export default function PayrollPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {runs.map((run) => (
+                            {filteredRuns.map((run) => (
                                 <tr key={run.id} className="border-b transition-colors hover:bg-muted/50">
                                     <td className="p-4 align-middle font-medium">{run.month}</td>
                                     <td className="p-4 align-middle">{run.created_at?.split('T')[0]}</td>
@@ -107,24 +128,13 @@ export default function PayrollPage() {
                                                 className="text-primary hover:underline font-medium"
                                                 onClick={() => handleView(run.id)}
                                             >
-                                                Review
+                                                {run.is_posted ? 'Details' : 'Edit / Pay'}
                                             </button>
-                                            {!run.is_posted && (
-                                                <>
-                                                    <span className="text-muted-foreground/30">|</span>
-                                                    <button
-                                                        className="text-primary hover:underline font-medium"
-                                                        onClick={() => handleApprove(run.id)}
-                                                    >
-                                                        Pay
-                                                    </button>
-                                                </>
-                                            )}
                                         </div>
                                     </td>
                                 </tr>
                             ))}
-                            {runs.length === 0 && (
+                            {filteredRuns.length === 0 && (
                                 <tr><td colSpan={4} className="p-4 text-center text-muted-foreground">No payroll runs found.</td></tr>
                             )}
                         </tbody>

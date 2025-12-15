@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Loader2, DollarSign, CreditCard, TrendingUp, TrendingDown, Users } from 'lucide-react';
-import { getInvoices, getPayments, getExpenses } from '@/lib/api';
+import { Loader2, DollarSign, CreditCard, TrendingUp, TrendingDown, Receipt, Calendar, CalendarDays, Users, UserCog, GraduationCap } from 'lucide-react';
+import { getInvoices, getPayments, getExpenses, getStudents, getTeachers, getStaffMembers } from '@/lib/api';
 
 
 export default function DashboardPage() {
@@ -10,16 +10,24 @@ export default function DashboardPage() {
         totalCollected: 0,
         totalExpenses: 0,
         outstanding: 0,
-        recentTxns: [] as any[]
+        recentTxns: [] as any[],
+        transactionsToday: 0,
+        transactionsThisMonth: 0,
+        totalStudents: 0,
+        totalTeachers: 0,
+        totalSupportStaff: 0
     });
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [invData, payData, expData] = await Promise.all([
+                const [invData, payData, expData, studentsData, teachersData, staffData] = await Promise.all([
                     getInvoices(),
                     getPayments(),
-                    getExpenses()
+                    getExpenses(),
+                    getStudents().catch(() => []),
+                    getTeachers().catch(() => []),
+                    getStaffMembers().catch(() => [])
                 ]);
 
                 // Calculate Totals
@@ -54,12 +62,37 @@ export default function DashboardPage() {
                     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                     .slice(0, 5);
 
+                // Calculate transactions per day and month
+                const today = new Date();
+                const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+                const transactionsToday = [...payments, ...expenses].filter(txn => {
+                    const txnDate = new Date(txn.date);
+                    return txnDate >= startOfToday;
+                }).length;
+
+                const transactionsThisMonth = [...payments, ...expenses].filter(txn => {
+                    const txnDate = new Date(txn.date);
+                    return txnDate >= startOfMonth;
+                }).length;
+
+                // Count support staff (staff with category 'Support Staff')
+                const supportStaffCount = staffData.filter(s =>
+                    s.category?.toLowerCase().includes('support')
+                ).length;
+
                 setStats({
                     totalInvoiced,
                     totalCollected,
                     totalExpenses,
                     outstanding,
-                    recentTxns: allTxns
+                    recentTxns: allTxns,
+                    transactionsToday,
+                    transactionsThisMonth,
+                    totalStudents: studentsData.length,
+                    totalTeachers: teachersData.length,
+                    totalSupportStaff: supportStaffCount
                 });
 
             } catch (error) {
@@ -80,10 +113,34 @@ export default function DashboardPage() {
 
             {/* KPI Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card title="Total Assessed Fees" value={stats.totalInvoiced} icon={<Users className="h-4 w-4 text-muted-foreground" />} />
-                <Card title="Total Collection" value={stats.totalCollected} icon={<DollarSign className="h-4 w-4 text-muted-foreground" />} className="text-green-600" />
-                <Card title="Total Expenses" value={stats.totalExpenses} icon={<TrendingDown className="h-4 w-4 text-muted-foreground" />} className="text-red-600" />
-                <Card title="Outstanding Dues" value={stats.outstanding} icon={<CreditCard className="h-4 w-4 text-muted-foreground" />} />
+                <StatCard
+                    title="Total Assessed Fees"
+                    value={stats.totalInvoiced}
+                    icon={<Receipt className="h-6 w-6" />}
+                    gradient="from-[#5B7FED] to-[#4A6BD9]"
+                    iconBg="bg-white/20"
+                />
+                <StatCard
+                    title="Total Collection"
+                    value={stats.totalCollected}
+                    icon={<DollarSign className="h-6 w-6" />}
+                    gradient="from-[#10B981] to-[#059669]"
+                    iconBg="bg-white/20"
+                />
+                <StatCard
+                    title="Total Expenses"
+                    value={stats.totalExpenses}
+                    icon={<TrendingDown className="h-6 w-6" />}
+                    gradient="from-[#FF5757] to-[#E63946]"
+                    iconBg="bg-white/20"
+                />
+                <StatCard
+                    title="Outstanding Dues"
+                    value={stats.outstanding}
+                    icon={<CreditCard className="h-6 w-6" />}
+                    gradient="from-[#F4C542] to-[#E5B534]"
+                    iconBg="bg-white/20"
+                />
             </div>
 
             {/* Recent Activity */}
@@ -116,13 +173,50 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
+
                 <div className="col-span-3 rounded-xl border bg-card text-card-foreground shadow">
                     <div className="p-6 flex flex-col space-y-1.5">
-                        <h3 className="font-semibold leading-none tracking-tight">Quick Actions</h3>
+                        <h3 className="font-semibold leading-none tracking-tight">Quick Stats</h3>
+                        <p className="text-sm text-muted-foreground">Overview of key metrics</p>
                     </div>
-                    <div className="p-6 pt-0 flex flex-col gap-2">
-                        {/* Placeholder for quick links */}
-                        <div className="text-sm text-muted-foreground">Use the sidebar to navigate to specific modules.</div>
+                    <div className="p-6 pt-0 grid grid-cols-2 gap-3">
+                        <InfoCard
+                            title="Today"
+                            value={stats.transactionsToday}
+                            icon={<Calendar className="h-5 w-5" />}
+                            color="text-blue-600"
+                            bgColor="bg-blue-50"
+                            suffix="Transactions"
+                        />
+                        <InfoCard
+                            title="This Month"
+                            value={stats.transactionsThisMonth}
+                            icon={<CalendarDays className="h-5 w-5" />}
+                            color="text-purple-600"
+                            bgColor="bg-purple-50"
+                            suffix="Transactions"
+                        />
+                        <InfoCard
+                            title="Students"
+                            value={stats.totalStudents}
+                            icon={<Users className="h-5 w-5" />}
+                            color="text-green-600"
+                            bgColor="bg-green-50"
+                        />
+                        <InfoCard
+                            title="Teachers"
+                            value={stats.totalTeachers}
+                            icon={<GraduationCap className="h-5 w-5" />}
+                            color="text-indigo-600"
+                            bgColor="bg-indigo-50"
+                        />
+                        <InfoCard
+                            title="Support Staff"
+                            value={stats.totalSupportStaff}
+                            icon={<UserCog className="h-5 w-5" />}
+                            color="text-orange-600"
+                            bgColor="bg-orange-50"
+                        />
                     </div>
                 </div>
             </div>
@@ -130,15 +224,75 @@ export default function DashboardPage() {
     );
 }
 
-function Card({ title, value, icon, className }: { title: string, value: number, icon: any, className?: string }) {
+function StatCard({
+    title,
+    value,
+    icon,
+    gradient,
+    iconBg
+}: {
+    title: string;
+    value: number;
+    icon: React.ReactNode;
+    gradient: string;
+    iconBg: string;
+}) {
     return (
-        <div className="rounded-xl border bg-card text-card-foreground shadow">
-            <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
-                <h3 className="tracking-tight text-sm font-medium">{title}</h3>
-                {icon}
+        <div className={`relative overflow-hidden rounded-xl shadow-lg bg-gradient-to-br ${gradient} text-white transition-all duration-300 hover:shadow-xl hover:scale-105`}>
+            <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${iconBg}`}>
+                        {icon}
+                    </div>
+                </div>
+                <div className="space-y-1">
+                    <p className="text-sm font-medium text-white/90">{title}</p>
+                    <p className="text-3xl font-bold">NPR {value.toLocaleString()}</p>
+                </div>
             </div>
-            <div className="p-6 pt-0">
-                <div className={`text-2xl font-bold ${className}`}>NPR {value.toLocaleString()}</div>
+            {/* Decorative circle */}
+            <div className="absolute -right-6 -bottom-6 h-24 w-24 rounded-full bg-white/10"></div>
+        </div>
+    );
+}
+
+function InfoCard({
+    title,
+    value,
+    icon,
+    color,
+    bgColor,
+    suffix
+}: {
+    title: string;
+    value: number;
+    icon: React.ReactNode;
+    color: string;
+    bgColor: string;
+    suffix?: string;
+}) {
+    return (
+        <div className={`rounded-lg border ${bgColor} p-4 transition-all duration-200 hover:shadow-md`}>
+            <div className="flex items-start gap-3">
+                <div className={`${color} mt-1`}>
+                    {icon}
+                </div>
+                <div className="flex-1">
+                    {suffix ? (
+                        // Layout for transaction cards: suffix on top, title below, then count
+                        <>
+                            <p className={`text-sm font-semibold ${color}`}>{suffix}</p>
+                            <p className="text-xs text-muted-foreground font-medium mb-1">{title}</p>
+                            <p className={`text-2xl font-bold ${color}`}>{value}</p>
+                        </>
+                    ) : (
+                        // Layout for other cards: title on top, number below
+                        <>
+                            <p className="text-xs text-muted-foreground font-medium">{title}</p>
+                            <p className={`text-2xl font-bold ${color}`}>{value}</p>
+                        </>
+                    )}
+                </div>
             </div>
         </div>
     );

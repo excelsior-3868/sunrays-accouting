@@ -8,6 +8,7 @@ export default function SettingsPage() {
     const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([]);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [editingYear, setEditingYear] = useState<FiscalYear | null>(null);
 
     const fetchYears = async () => {
         try {
@@ -24,24 +25,42 @@ export default function SettingsPage() {
         fetchYears();
     }, []);
 
-    const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
-        const newYear = {
+
+        const yearData = {
             name: formData.get('name') as string,
             start_date: formData.get('start_date') as string,
             end_date: formData.get('end_date') as string,
-            is_active: false,
-            is_closed: false,
         };
 
         try {
-            await createFiscalYear(newYear);
+            if (editingYear) {
+                // Update
+                await import('@/lib/api').then(m => m.updateFiscalYear(editingYear.id, yearData));
+                alert('Fiscal Year updated successfully');
+            } else {
+                // Create
+                await createFiscalYear({
+                    ...yearData,
+                    is_active: false,
+                    is_closed: false,
+                });
+                alert('Fiscal Year created successfully');
+            }
             setIsDialogOpen(false);
+            setEditingYear(null);
             fetchYears();
         } catch (error) {
-            console.error('Error creating fiscal year:', error);
+            console.error('Error saving fiscal year:', error);
+            alert('Failed to save fiscal year.');
         }
+    };
+
+    const handleEdit = (fy: FiscalYear) => {
+        setEditingYear(fy);
+        setIsDialogOpen(true);
     };
 
     const handleSetActive = async (id: string) => {
@@ -61,7 +80,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                     <h2 className="text-lg font-semibold">Fiscal Years</h2>
                     <button
-                        onClick={() => setIsDialogOpen(true)}
+                        onClick={() => { setEditingYear(null); setIsDialogOpen(true); }}
                         className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2"
                     >
                         <Plus className="mr-2 h-4 w-4" /> Add Fiscal Year
@@ -96,9 +115,12 @@ export default function SettingsPage() {
                                                 </div>
                                             </td>
                                             <td className="p-4 align-middle text-right">
-                                                {!fy.is_active && !fy.is_closed && (
-                                                    <button onClick={() => handleSetActive(fy.id)} className="text-primary hover:underline text-sm font-medium mr-4">Set Active</button>
-                                                )}
+                                                <div className="flex justify-end gap-3">
+                                                    <button onClick={() => handleEdit(fy)} className="text-primary hover:underline text-sm font-medium">Edit</button>
+                                                    {!fy.is_active && !fy.is_closed && (
+                                                        <button onClick={() => handleSetActive(fy.id)} className="text-primary hover:underline text-sm font-medium">Set Active</button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -116,25 +138,25 @@ export default function SettingsPage() {
             {isDialogOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
                     <div className="bg-background rounded-lg shadow-lg w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
-                        <h3 className="text-lg font-semibold mb-4">New Fiscal Year</h3>
-                        <form onSubmit={handleCreate} className="space-y-4">
+                        <h3 className="text-lg font-semibold mb-4">{editingYear ? 'Edit Fiscal Year' : 'New Fiscal Year'}</h3>
+                        <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Name (e.g. 2080-2081)</label>
-                                <input name="name" required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
+                                <input name="name" required defaultValue={editingYear?.name} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Start Date</label>
-                                    <input type="date" name="start_date" required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                    <input type="date" name="start_date" required defaultValue={editingYear?.start_date} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">End Date</label>
-                                    <input type="date" name="end_date" required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                    <input type="date" name="end_date" required defaultValue={editingYear?.end_date} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                                 </div>
                             </div>
                             <div className="flex justify-end gap-2 mt-6">
                                 <button type="button" onClick={() => setIsDialogOpen(false)} className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground">Cancel</button>
-                                <button type="submit" className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90">Create</button>
+                                <button type="submit" className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90">{editingYear ? 'Update' : 'Create'}</button>
                             </div>
                         </form>
                     </div>

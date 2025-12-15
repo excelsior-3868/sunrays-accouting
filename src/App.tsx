@@ -16,6 +16,7 @@ import ReportsPage from '@/pages/ReportsPage';
 import StudentsPage from '@/pages/StudentsPage';
 import TeachersPage from '@/pages/TeachersPage';
 import StaffsPage from '@/pages/StaffsPage';
+import UsersPage from '@/pages/UsersPage';
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/students" element={<StudentsPage />} />
             <Route path="/teachers" element={<TeachersPage />} />
+            <Route path="/users" element={<UsersPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

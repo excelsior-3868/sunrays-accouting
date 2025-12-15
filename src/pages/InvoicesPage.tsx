@@ -33,6 +33,7 @@ export default function InvoicesPage() {
     const [listSearch, setListSearch] = useState('');
     const [monthFilter, setMonthFilter] = useState('');
     const [classFilter, setClassFilter] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
 
     const fetchData = async () => {
         try {
@@ -237,6 +238,9 @@ export default function InvoicesPage() {
         // 3. Class Filter
         if (classFilter && studentClass !== classFilter.toLowerCase()) return false;
 
+        // 4. Status Filter
+        if (statusFilter && inv.status !== statusFilter) return false;
+
         return true;
     });
 
@@ -268,6 +272,19 @@ export default function InvoicesPage() {
                         {['Baisakh', 'Jestha', 'Asar', 'Shrawan', 'Bhadra', 'Ashwin', 'Kartik', 'Mangsir', 'Poush', 'Magh', 'Falgun', 'Chaitra'].map(m => (
                             <option key={m} value={m}>{m}</option>
                         ))}
+                    </select>
+
+                    {/* Status Filter */}
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                        <option value="">All Status</option>
+                        <option value="Paid">Paid</option>
+                        <option value="Unpaid">Unpaid</option>
+                        <option value="Partial">Partial</option>
+                        <option value="Void">Void</option>
                     </select>
 
                     <div className="relative">

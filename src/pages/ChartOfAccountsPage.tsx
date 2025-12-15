@@ -9,6 +9,7 @@ export default function ChartOfAccountsPage() {
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+    const [editingHead, setEditingHead] = useState<GLHead | null>(null);
 
     // Filter state
     const [selectedType, setSelectedType] = useState<GLHeadType | 'All'>('All');
@@ -28,12 +29,12 @@ export default function ChartOfAccountsPage() {
         fetchHeads();
     }, []);
 
-    const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
         const parentId = formData.get('parent_id') as string;
 
-        const newHead = {
+        const headData = {
             name: formData.get('name') as string,
             type: formData.get('type') as GLHeadType,
             code: formData.get('code') as string,
@@ -42,11 +43,19 @@ export default function ChartOfAccountsPage() {
         };
 
         try {
-            await createGLHead(newHead);
+            if (editingHead) {
+                await import('@/lib/api').then(m => m.updateGLHead(editingHead.id, headData));
+                alert('GL Head updated successfully');
+            } else {
+                await createGLHead(headData);
+                alert('GL Head created successfully');
+            }
             setIsDialogOpen(false);
+            setEditingHead(null);
             fetchHeads();
         } catch (error) {
-            console.error('Error creating GL head:', error);
+            console.error('Error saving GL head:', error);
+            alert('Failed to save GL head.');
         }
     };
 
@@ -60,6 +69,10 @@ export default function ChartOfAccountsPage() {
         }
     }
 
+    const handleEdit = (head: GLHead) => {
+        setEditingHead(head);
+        setIsDialogOpen(true);
+    };
 
     // Build Tree
     const buildTree = (heads: GLHead[]) => {
@@ -121,6 +134,7 @@ export default function ChartOfAccountsPage() {
                         </span>
                     </div>
                     <div className="opacity-0 group-hover:opacity-100 flex gap-2">
+                        <button onClick={() => handleEdit(node)} className="text-xs text-primary hover:underline">Edit</button>
                         <button onClick={() => handleDelete(node.id)} className="text-xs text-destructive hover:underline">Delete</button>
                     </div>
                 </div>
@@ -138,7 +152,7 @@ export default function ChartOfAccountsPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">Chart of Accounts</h1>
-                <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
+                <button onClick={() => { setEditingHead(null); setIsDialogOpen(true); }} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
                     <Plus className="mr-2 h-4 w-4" /> Add GL Head
                 </button>
             </div>
@@ -172,21 +186,21 @@ export default function ChartOfAccountsPage() {
             {isDialogOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
                     <div className="bg-background rounded-lg shadow-lg w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
-                        <h3 className="text-lg font-semibold mb-4">Add GL Head</h3>
-                        <form onSubmit={handleCreate} className="space-y-4">
+                        <h3 className="text-lg font-semibold mb-4">{editingHead ? 'Edit GL Head' : 'Add GL Head'}</h3>
+                        <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Name</label>
-                                <input name="name" required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
+                                <input name="name" required defaultValue={editingHead?.name} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Code (Optional)</label>
-                                <input name="code" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
+                                <input name="code" defaultValue={editingHead?.code || ''} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Type</label>
-                                    <select name="type" required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                    <select name="type" required defaultValue={editingHead?.type} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                                         <option value="Income">Income</option>
                                         <option value="Expense">Expense</option>
                                         <option value="Asset">Asset</option>
@@ -195,9 +209,9 @@ export default function ChartOfAccountsPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Parent Head</label>
-                                    <select name="parent_id" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                    <select name="parent_id" defaultValue={editingHead?.parent_id || 'none'} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                                         <option value="none">None (Root)</option>
-                                        {glHeads.map(h => (
+                                        {glHeads.filter(h => h.id !== editingHead?.id).map(h => (
                                             <option key={h.id} value={h.id}>{h.name}</option>
                                         ))}
                                     </select>
@@ -206,12 +220,12 @@ export default function ChartOfAccountsPage() {
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Description</label>
-                                <textarea name="description" className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
+                                <textarea name="description" defaultValue={editingHead?.description || ''} className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
                             </div>
 
                             <div className="flex justify-end gap-2 mt-6">
                                 <button type="button" onClick={() => setIsDialogOpen(false)} className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground">Cancel</button>
-                                <button type="submit" className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90">Create</button>
+                                <button type="submit" className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90">{editingHead ? 'Update' : 'Create'}</button>
                             </div>
                         </form>
                     </div>

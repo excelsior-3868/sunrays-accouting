@@ -13,6 +13,9 @@ export default function ExpensesPage() {
     const [assetHeads, setAssetHeads] = useState<GLHead[]>([]);
     const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([]);
 
+    // Filters
+    const [selectedHeadFilter, setSelectedHeadFilter] = useState('');
+
     const fetchData = async () => {
         try {
             const [expData, glData, fyData] = await Promise.all([
@@ -86,13 +89,29 @@ export default function ExpensesPage() {
         );
     };
 
+    const filteredExpenses = expenses.filter(exp =>
+        selectedHeadFilter ? exp.expense_head_id === selectedHeadFilter : true
+    );
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">Expenses</h1>
-                <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
-                    <Plus className="mr-2 h-4 w-4" /> Add Expense
-                </button>
+
+                <div className="flex items-center gap-2">
+                    <select
+                        value={selectedHeadFilter}
+                        onChange={(e) => setSelectedHeadFilter(e.target.value)}
+                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                        <option value="">All Expense Heads</option>
+                        {renderGLOptions(expenseHeads)}
+                    </select>
+
+                    <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
+                        <Plus className="mr-2 h-4 w-4" /> Add Expense
+                    </button>
+                </div>
             </div>
 
             {loading ? (
@@ -110,7 +129,7 @@ export default function ExpensesPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {expenses.map((exp) => (
+                            {filteredExpenses.map((exp) => (
                                 <tr key={exp.id} className="border-b transition-colors hover:bg-muted/50">
                                     <td className="p-4 align-middle">{exp.expense_date}</td>
                                     <td className="p-4 align-middle font-medium">{exp.expense_head?.name}</td>

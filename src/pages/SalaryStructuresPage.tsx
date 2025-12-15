@@ -155,53 +155,88 @@ export default function SalaryStructuresPage() {
                 <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {structures.map((st) => {
+                    {structures.map((st, index) => {
                         const designation = teachers.find(t => t.id === st.employee_id)?.designation
                             || staffMembers.find(s => s.id === st.employee_id)?.designation
                             || 'Employee';
 
+                        // Cycle through colors for top border
+                        const colors = [
+                            'border-t-pink-500',
+                            'border-t-purple-500',
+                            'border-t-blue-500',
+                            'border-t-green-500'
+                        ];
+                        const borderColor = colors[index % colors.length];
+
+                        // Calculate totals
+                        const totalEarnings = st.items?.filter(i => i.type === 'Earning').reduce((sum, i) => sum + i.amount, 0) || 0;
+                        const totalDeductions = st.items?.filter(i => i.type === 'Deduction').reduce((sum, i) => sum + i.amount, 0) || 0;
+                        const netSalary = totalEarnings - totalDeductions;
+
                         return (
-                            <div key={st.id} className="rounded-xl border bg-card text-card-foreground shadow">
-                                <div className="flex flex-col space-y-1.5 p-6">
-                                    <div className="flex justify-between items-start">
+                            <div key={st.id} className={`rounded-lg border-t-4 ${borderColor} bg-white shadow-sm hover:shadow-md transition-shadow relative group`}>
+                                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 z-10">
+                                    <button
+                                        onClick={() => handleEdit(st)}
+                                        className="p-1.5 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors"
+                                        title="Edit"
+                                    >
+                                        <Pencil className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(st.id)}
+                                        className="p-1.5 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition-colors"
+                                        title="Delete"
+                                    >
+                                        <Trash className="h-3.5 w-3.5" />
+                                    </button>
+                                </div>
+
+                                <div className="p-5">
+                                    <div className="mb-3 pr-16">
+                                        <h3 className="font-bold text-lg text-gray-900">{st.employee_name}</h3>
+                                        <p className="text-sm text-gray-500 mt-0.5">{designation}</p>
+                                    </div>
+
+                                    <div className="mb-4 pb-3 border-b">
+                                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Net Salary</span>
+                                        <p className="text-xl font-bold text-gray-900 mt-1">NPR {netSalary.toLocaleString()}</p>
+                                    </div>
+
+                                    <div className="space-y-3">
                                         <div>
-                                            <h3 className="font-semibold leading-none tracking-tight">{st.employee_name}</h3>
-                                            <p className="text-sm text-muted-foreground mt-1">{designation}</p>
+                                            <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">Earnings</p>
+                                            <ul className="space-y-1.5">
+                                                {st.items?.filter(i => i.type === 'Earning').map(item => (
+                                                    <li key={item.id} className="flex justify-between text-sm">
+                                                        <span className="text-gray-600">{item.gl_head?.name}</span>
+                                                        <span className="font-medium text-gray-900">NPR {item.amount.toLocaleString()}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                            <div className="flex justify-between text-sm font-semibold mt-2 pt-2 border-t border-green-100">
+                                                <span className="text-green-700">Total Earnings</span>
+                                                <span className="text-green-700">NPR {totalEarnings.toLocaleString()}</span>
+                                            </div>
                                         </div>
 
-                                        <div className="flex gap-2">
-                                            <button onClick={() => handleEdit(st)} className="text-muted-foreground hover:text-primary transition-colors p-1" title="Edit">
-                                                <Pencil className="h-4 w-4" />
-                                            </button>
-                                            <button onClick={() => handleDelete(st.id)} className="text-muted-foreground hover:text-destructive transition-colors p-1" title="Delete">
-                                                <Trash className="h-4 w-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="p-6 pt-0 text-sm text-muted-foreground">
-                                    <div className="space-y-2">
-                                        <h4 className="font-medium text-foreground">Earnings</h4>
-                                        <ul className="list-disc pl-4 space-y-1">
-                                            {st.items?.filter(i => i.type === 'Earning').map(item => (
-                                                <li key={item.id} className="flex justify-between">
-                                                    <span>{item.gl_head?.name}</span>
-                                                    <span>{item.amount}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
                                         {st.items?.some(i => i.type === 'Deduction') && (
-                                            <>
-                                                <h4 className="font-medium text-foreground mt-2">Deductions</h4>
-                                                <ul className="list-disc pl-4 space-y-1">
+                                            <div>
+                                                <p className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-2">Deductions</p>
+                                                <ul className="space-y-1.5">
                                                     {st.items?.filter(i => i.type === 'Deduction').map(item => (
-                                                        <li key={item.id} className="flex justify-between">
-                                                            <span>{item.gl_head?.name}</span>
-                                                            <span>{item.amount}</span>
+                                                        <li key={item.id} className="flex justify-between text-sm">
+                                                            <span className="text-gray-600">{item.gl_head?.name}</span>
+                                                            <span className="font-medium text-gray-900">NPR {item.amount.toLocaleString()}</span>
                                                         </li>
                                                     ))}
                                                 </ul>
-                                            </>
+                                                <div className="flex justify-between text-sm font-semibold mt-2 pt-2 border-t border-red-100">
+                                                    <span className="text-red-700">Total Deductions</span>
+                                                    <span className="text-red-700">NPR {totalDeductions.toLocaleString()}</span>
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
