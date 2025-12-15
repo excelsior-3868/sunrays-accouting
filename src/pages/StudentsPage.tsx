@@ -30,15 +30,15 @@ export default function StudentsPage() {
             {loading ? (
                 <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : (
-                <div className="rounded-md border bg-card">
+                <div className="rounded-lg border bg-card overflow-hidden">
                     <table className="w-full caption-bottom text-sm">
                         <thead className="[&_tr]:border-b">
-                            <tr className="border-b transition-colors hover:bg-muted/50">
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Name</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Class</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Roll No</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Father's Name</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Mobile</th>
+                            <tr className="border-b transition-colors bg-primary text-primary-foreground hover:bg-primary/90">
+                                <th className="h-12 px-4 text-left align-middle font-medium">Name</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Class</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Roll No</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Father's Name</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Mobile</th>
                             </tr>
                         </thead>
                         <tbody>

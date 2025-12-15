@@ -190,15 +190,15 @@ export default function StaffsPage() {
             {loading ? (
                 <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : (
-                <div className="rounded-md border bg-card">
+                <div className="rounded-lg border bg-card overflow-hidden">
                     <table className="w-full caption-bottom text-sm">
                         <thead className="[&_tr]:border-b">
-                            <tr className="border-b transition-colors hover:bg-muted/50">
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Name</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Role</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Contact</th>
-                                <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Actions</th>
+                            <tr className="border-b transition-colors bg-primary text-primary-foreground hover:bg-primary/90">
+                                <th className="h-12 px-4 text-left align-middle font-medium">Name</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Role</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Status</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Contact</th>
+                                <th className="h-12 px-4 text-right align-middle font-medium">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="[&_tr:last-child]:border-0">

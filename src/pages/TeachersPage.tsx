@@ -30,13 +30,13 @@ export default function TeachersPage() {
             {loading ? (
                 <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : (
-                <div className="rounded-md border bg-card">
+                <div className="rounded-lg border bg-card overflow-hidden">
                     <table className="w-full caption-bottom text-sm">
                         <thead className="[&_tr]:border-b">
-                            <tr className="border-b transition-colors hover:bg-muted/50">
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Name</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Email</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Phone</th>
+                            <tr className="border-b transition-colors bg-primary text-primary-foreground hover:bg-primary/90">
+                                <th className="h-12 px-4 text-left align-middle font-medium">Name</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Email</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Phone</th>
                             </tr>
                         </thead>
                         <tbody>

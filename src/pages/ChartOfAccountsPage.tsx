@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, ChevronRight, ChevronDown, Folder, FileText } from 'lucide-react';
+import { Plus, ChevronRight, ChevronDown, Folder, FileText, Pencil, Trash2 } from 'lucide-react';
 import { getGLHeads, createGLHead, deleteGLHead } from '@/lib/api';
 import { type GLHead, type GLHeadType } from '@/types';
 import { cn } from '@/lib/utils'; // Assuming you have this utility
@@ -134,8 +134,18 @@ export default function ChartOfAccountsPage() {
                         </span>
                     </div>
                     <div className="opacity-0 group-hover:opacity-100 flex gap-2">
-                        <button onClick={() => handleEdit(node)} className="text-xs text-primary hover:underline">Edit</button>
-                        <button onClick={() => handleDelete(node.id)} className="text-xs text-destructive hover:underline">Delete</button>
+                        <button
+                            onClick={() => handleEdit(node)}
+                            className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                        >
+                            <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                            onClick={() => handleDelete(node.id)}
+                            className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </button>
                     </div>
                 </div>
                 {node.children && node.children.length > 0 && expandedNodes.has(node.id) && (

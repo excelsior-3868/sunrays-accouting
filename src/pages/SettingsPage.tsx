@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, Pencil, CheckCircle } from 'lucide-react';
 import { getFiscalYears, createFiscalYear, setActiveFiscalYear } from '@/lib/api';
 import { type FiscalYear } from '@/types';
 
@@ -90,16 +90,16 @@ export default function SettingsPage() {
                 {loading ? (
                     <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
                 ) : (
-                    <div className="rounded-md border bg-card">
+                    <div className="rounded-lg border bg-card overflow-hidden">
                         <div className="relative w-full overflow-auto">
                             <table className="w-full caption-bottom text-sm">
                                 <thead className="[&_tr]:border-b">
-                                    <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Name</th>
-                                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Start Date</th>
-                                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">End Date</th>
-                                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
-                                        <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Actions</th>
+                                    <tr className="border-b transition-colors bg-primary text-primary-foreground hover:bg-primary/90 data-[state=selected]:bg-muted">
+                                        <th className="h-12 px-4 text-left align-middle font-medium">Name</th>
+                                        <th className="h-12 px-4 text-left align-middle font-medium">Start Date</th>
+                                        <th className="h-12 px-4 text-left align-middle font-medium">End Date</th>
+                                        <th className="h-12 px-4 text-left align-middle font-medium">Status</th>
+                                        <th className="h-12 px-4 text-right align-middle font-medium">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="[&_tr:last-child]:border-0">
@@ -115,10 +115,22 @@ export default function SettingsPage() {
                                                 </div>
                                             </td>
                                             <td className="p-4 align-middle text-right">
-                                                <div className="flex justify-end gap-3">
-                                                    <button onClick={() => handleEdit(fy)} className="text-primary hover:underline text-sm font-medium">Edit</button>
+                                                <div className="flex justify-end gap-2 items-center">
+                                                    <button
+                                                        onClick={() => handleEdit(fy)}
+                                                        className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                                                        title="Edit"
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </button>
                                                     {!fy.is_active && !fy.is_closed && (
-                                                        <button onClick={() => handleSetActive(fy.id)} className="text-primary hover:underline text-sm font-medium">Set Active</button>
+                                                        <button
+                                                            onClick={() => handleSetActive(fy.id)}
+                                                            className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
+                                                            title="Set Active"
+                                                        >
+                                                            <CheckCircle className="h-4 w-4" />
+                                                        </button>
                                                     )}
                                                 </div>
                                             </td>

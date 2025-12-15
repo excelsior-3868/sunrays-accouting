@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Plus, Loader2 } from 'lucide-react';
-import { getPayrollRuns, generatePayrollRun, getFiscalYears, approvePayrollRun, getPayrollRunDetails } from '@/lib/api';
+import { Plus, Loader2, Trash2, FileText, Eye } from 'lucide-react';
+import { getPayrollRuns, generatePayrollRun, getFiscalYears, approvePayrollRun, getPayrollRunDetails, deletePayrollRun } from '@/lib/api';
 import { type PayrollRun, type FiscalYear } from '@/types';
 
 export default function PayrollPage() {
@@ -9,6 +9,7 @@ export default function PayrollPage() {
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState<'All' | 'Draft' | 'Posted'>('All');
+    const [monthFilter, setMonthFilter] = useState('');
 
     const fetchData = async () => {
         try {
@@ -36,6 +37,13 @@ export default function PayrollPage() {
         const fyId = formData.get('fiscal_year_id') as string;
         const month = formData.get('month') as string;
 
+        // Validation: Check if payroll for this month and FY already exists
+        const exists = runs.some(r => r.fiscal_year_id === fyId && r.month === month);
+        if (exists) {
+            alert(`Payroll for ${month} already exists in this fiscal year!`);
+            return;
+        }
+
         try {
             await generatePayrollRun(fyId, month);
             setIsDialogOpen(false);
@@ -57,6 +65,17 @@ export default function PayrollPage() {
         }
     };
 
+    const handleDelete = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this payroll run? All associated payslips will be removed. This cannot be undone.')) return;
+        try {
+            await deletePayrollRun(id);
+            fetchData();
+        } catch (error) {
+            console.error('Error deleting payroll:', error);
+            alert('Failed to delete payroll run.');
+        }
+    };
+
     const [viewingRun, setViewingRun] = useState<any | null>(null);
 
     const handleView = async (id: string) => {
@@ -70,9 +89,15 @@ export default function PayrollPage() {
     };
 
     const filteredRuns = runs.filter(run => {
-        if (statusFilter === 'All') return true;
-        if (statusFilter === 'Posted') return run.is_posted;
-        if (statusFilter === 'Draft') return !run.is_posted;
+        // Status Filter
+        if (statusFilter !== 'All') {
+            if (statusFilter === 'Posted' && !run.is_posted) return false;
+            if (statusFilter === 'Draft' && run.is_posted) return false;
+        }
+
+        // Month Filter
+        if (monthFilter && run.month !== monthFilter) return false;
+
         return true;
     });
 
@@ -82,6 +107,17 @@ export default function PayrollPage() {
                 <h1 className="text-2xl font-bold tracking-tight">Payroll</h1>
 
                 <div className="flex items-center gap-2">
+                    <select
+                        value={monthFilter}
+                        onChange={(e) => setMonthFilter(e.target.value)}
+                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                        <option value="">All Months</option>
+                        {['Baisakh', 'Jestha', 'Asar', 'Shrawan', 'Bhadra', 'Ashwin', 'Kartik', 'Mangsir', 'Poush', 'Magh', 'Falgun', 'Chaitra'].map(m => (
+                            <option key={m} value={m}>{m}</option>
+                        ))}
+                    </select>
+
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value as any)}
@@ -101,14 +137,14 @@ export default function PayrollPage() {
             {loading ? (
                 <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : (
-                <div className="rounded-md border bg-card">
+                <div className="rounded-lg border bg-card overflow-hidden">
                     <table className="w-full caption-bottom text-sm">
                         <thead className="[&_tr]:border-b">
-                            <tr className="border-b transition-colors hover:bg-muted/50">
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Month</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Run Date</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Approve Status</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Actions</th>
+                            <tr className="border-b transition-colors bg-primary text-primary-foreground hover:bg-primary/90">
+                                <th className="h-12 px-4 text-left align-middle font-medium">Month</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Run Date</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Approve Status</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -125,11 +161,22 @@ export default function PayrollPage() {
                                     <td className="p-4 align-middle">
                                         <div className="flex items-center gap-2">
                                             <button
-                                                className="text-primary hover:underline font-medium"
+                                                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 w-9 text-blue-600"
                                                 onClick={() => handleView(run.id)}
+                                                title={run.is_posted ? "View Details" : "View & Approve"}
                                             >
-                                                {run.is_posted ? 'Details' : 'Edit / Pay'}
+                                                <Eye size={18} />
                                             </button>
+
+                                            {!run.is_posted && (
+                                                <button
+                                                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 w-9 text-red-600"
+                                                    onClick={() => handleDelete(run.id)}
+                                                    title="Delete Run"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

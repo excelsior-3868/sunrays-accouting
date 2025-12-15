@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
 import { getExpenses, createExpense, getGLHeads, getFiscalYears } from '@/lib/api';
 import { type Expense, type GLHead, type FiscalYear } from '@/types';
+import SearchableSelect from '@/components/SearchableSelect';
 
 export default function ExpensesPage() {
     const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -38,56 +39,66 @@ export default function ExpensesPage() {
         fetchData();
     }, []);
 
+    const [newExpenseState, setNewExpenseState] = useState({
+        fiscal_year_id: '',
+        expense_head_id: '',
+        payment_mode_gl_id: '',
+        amount: '',
+        expense_date: new Date().toISOString().split('T')[0],
+        description: ''
+    });
+
     const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const formData = new FormData(e.currentTarget);
-
-        const newExpense = {
-            fiscal_year_id: formData.get('fiscal_year_id') as string,
-            expense_head_id: formData.get('expense_head_id') as string,
-            payment_mode_gl_id: formData.get('payment_mode_gl_id') as string,
-            amount: Number(formData.get('amount')),
-            expense_date: formData.get('expense_date') as string,
-            description: formData.get('description') as string,
-        };
 
         try {
-            await createExpense(newExpense);
+            await createExpense({
+                fiscal_year_id: newExpenseState.fiscal_year_id,
+                expense_head_id: newExpenseState.expense_head_id,
+                payment_mode_gl_id: newExpenseState.payment_mode_gl_id,
+                amount: Number(newExpenseState.amount),
+                expense_date: newExpenseState.expense_date,
+                description: newExpenseState.description,
+            });
             setIsDialogOpen(false);
+            // Reset form
+            setNewExpenseState(prev => ({ ...prev, amount: '', description: '' }));
             fetchData();
         } catch (error) {
             console.error('Error creating expense:', error);
         }
     };
 
-    const renderGLOptions = (heads: GLHead[]) => {
-        // Find IDs that are parents
-        const parentIds = new Set(heads.map(h => h.parent_id).filter((id): id is string => !!id));
-        const isParent = (id: string) => parentIds.has(id);
+    const getOptionsFromHeads = (heads: GLHead[]) => {
+        // Map Heads to Options with Groups
+        // First find Map of ID -> Name for parents
+        const headMap = new Map(heads.map(h => [h.id, h.name]));
 
-        // Filter Categories (nodes that are parents to others in this list)
-        const categories = heads.filter(h => isParent(h.id));
+        return heads.map(h => {
+            // If it has a parent_id, map usage group name. If no parent, it's 'General' or similar unless it is a parent itself
+            let group = 'Other';
+            if (h.parent_id && headMap.has(h.parent_id)) {
+                group = headMap.get(h.parent_id) || 'Other';
+            } else if (!h.parent_id) {
+                group = 'Main Categories';
+            }
 
-        return (
-            <>
-                {categories.map(cat => (
-                    <optgroup key={cat.id} label={cat.name}>
-                        {heads
-                            .filter(h => h.parent_id === cat.id)
-                            .map(child => (
-                                <option key={child.id} value={child.id}>{child.name}</option>
-                            ))
-                        }
-                    </optgroup>
-                ))}
-
-                {/* Items that don't belong to any of the *visible* categories (Orphans/Top Leaves) */}
-                {heads.filter(h => !h.parent_id && !isParent(h.id)).map(h => (
-                    <option key={h.id} value={h.id}>{h.name}</option>
-                ))}
-            </>
-        );
+            return {
+                value: h.id,
+                label: h.name,
+                group: group
+            };
+        }).sort((a, b) => a.group.localeCompare(b.group));
     };
+
+    const expenseOptions = getOptionsFromHeads(expenseHeads);
+    // Explicit sort to ensure consistent display
+    expenseOptions.sort((a, b) => {
+        if (a.group === b.group) return a.label.localeCompare(b.label);
+        return a.group.localeCompare(b.group);
+    });
+
+    const assetOptions = getOptionsFromHeads(assetHeads);
 
     const filteredExpenses = expenses.filter(exp =>
         selectedHeadFilter ? exp.expense_head_id === selectedHeadFilter : true
@@ -99,14 +110,14 @@ export default function ExpensesPage() {
                 <h1 className="text-2xl font-bold tracking-tight">Expenses</h1>
 
                 <div className="flex items-center gap-2">
-                    <select
-                        value={selectedHeadFilter}
-                        onChange={(e) => setSelectedHeadFilter(e.target.value)}
-                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    >
-                        <option value="">All Expense Heads</option>
-                        {renderGLOptions(expenseHeads)}
-                    </select>
+                    <div className="w-[300px]">
+                        <SearchableSelect
+                            options={[{ value: '', label: 'All Expense Heads', group: 'Filter' }, ...expenseOptions]}
+                            value={selectedHeadFilter}
+                            onChange={(val) => setSelectedHeadFilter(val)}
+                            placeholder="Search Expense Heads..."
+                        />
+                    </div>
 
                     <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
                         <Plus className="mr-2 h-4 w-4" /> Add Expense
@@ -117,15 +128,15 @@ export default function ExpensesPage() {
             {loading ? (
                 <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : (
-                <div className="rounded-md border bg-card">
+                <div className="rounded-lg border bg-card overflow-hidden">
                     <table className="w-full caption-bottom text-sm">
                         <thead className="[&_tr]:border-b">
-                            <tr className="border-b transition-colors hover:bg-muted/50">
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Date</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Expense Head</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Description</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Paid Via</th>
-                                <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Amount</th>
+                            <tr className="border-b transition-colors bg-primary text-primary-foreground hover:bg-primary/90">
+                                <th className="h-12 px-4 text-left align-middle font-medium">Date</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Expense Head</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Description</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Paid Via</th>
+                                <th className="h-12 px-4 text-right align-middle font-medium">Amount</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -153,7 +164,14 @@ export default function ExpensesPage() {
                         <form onSubmit={handleCreate} className="space-y-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Fiscal Year</label>
-                                <select name="fiscal_year_id" required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                                <select
+                                    name="fiscal_year_id"
+                                    required
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    value={newExpenseState.fiscal_year_id}
+                                    onChange={e => setNewExpenseState({ ...newExpenseState, fiscal_year_id: e.target.value })}
+                                >
+                                    <option value="">Select FY</option>
                                     {fiscalYears.map(fy => (
                                         <option key={fy.id} value={fy.id}>{fy.name}</option>
                                     ))}
@@ -162,33 +180,58 @@ export default function ExpensesPage() {
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Expense Head</label>
-                                <select name="expense_head_id" required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                                    <option value="">Select Expense Type</option>
-                                    {renderGLOptions(expenseHeads)}
-                                </select>
+                                <SearchableSelect
+                                    options={expenseOptions}
+                                    value={newExpenseState.expense_head_id}
+                                    onChange={(val) => setNewExpenseState({ ...newExpenseState, expense_head_id: val })}
+                                    placeholder="Select Expense Type..."
+                                />
+                                <input type="hidden" name="expense_head_id" value={newExpenseState.expense_head_id} required />
                             </div>
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Amount</label>
-                                <input type="number" name="amount" required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                <input
+                                    type="number"
+                                    name="amount"
+                                    required
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    value={newExpenseState.amount}
+                                    onChange={e => setNewExpenseState({ ...newExpenseState, amount: e.target.value })}
+                                />
                             </div>
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Date</label>
-                                <input type="date" name="expense_date" required defaultValue={new Date().toISOString().split('T')[0]} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                <input
+                                    type="date"
+                                    name="expense_date"
+                                    required
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    value={newExpenseState.expense_date}
+                                    onChange={e => setNewExpenseState({ ...newExpenseState, expense_date: e.target.value })}
+                                />
                             </div>
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Payment Mode (Paid From)</label>
-                                <select name="payment_mode_gl_id" required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                                    <option value="">Select Asset (Cash/Bank)</option>
-                                    {renderGLOptions(assetHeads)}
-                                </select>
+                                <SearchableSelect
+                                    options={assetOptions}
+                                    value={newExpenseState.payment_mode_gl_id}
+                                    onChange={(val) => setNewExpenseState({ ...newExpenseState, payment_mode_gl_id: val })}
+                                    placeholder="Select Asset (Cash/Bank)..."
+                                />
+                                <input type="hidden" name="payment_mode_gl_id" value={newExpenseState.payment_mode_gl_id} required />
                             </div>
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Description</label>
-                                <textarea name="description" className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                <textarea
+                                    name="description"
+                                    className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    value={newExpenseState.description}
+                                    onChange={e => setNewExpenseState({ ...newExpenseState, description: e.target.value })}
+                                />
                             </div>
 
                             <div className="flex justify-end gap-2 mt-6">

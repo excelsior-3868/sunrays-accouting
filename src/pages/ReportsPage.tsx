@@ -120,15 +120,15 @@ export default function ReportsPage() {
                 </div>
             )}
 
-            <div className="rounded-md border bg-card">
+            <div className="rounded-lg border bg-card overflow-hidden">
                 <table className="w-full caption-bottom text-sm">
                     <thead className="[&_tr]:border-b">
-                        <tr className="border-b transition-colors hover:bg-muted/50">
-                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Date</th>
-                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Type</th>
-                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Particulars</th>
-                            <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Debit (In)</th>
-                            <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Credit (Out)</th>
+                        <tr className="border-b transition-colors bg-primary text-primary-foreground hover:bg-primary/90">
+                            <th className="h-12 px-4 text-left align-middle font-medium">Date</th>
+                            <th className="h-12 px-4 text-left align-middle font-medium">Type</th>
+                            <th className="h-12 px-4 text-left align-middle font-medium">Particulars</th>
+                            <th className="h-12 px-4 text-right align-middle font-medium">Debit (In)</th>
+                            <th className="h-12 px-4 text-right align-middle font-medium">Credit (Out)</th>
                         </tr>
                     </thead>
                     <tbody>

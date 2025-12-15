@@ -484,25 +484,47 @@ export const approvePayrollRun = async (runId: string) => {
     if (!cashMethods || cashMethods.length === 0) throw new Error('Cash GL Head not found for payment (searched for "%Cash%").');
     const cashHeadId = cashMethods[0].id;
 
-    // Get a fallback Expense Head (try 'Salar...' first, then any Expense)
-    const { data: salaryHeads } = await supabase.from('gl_heads').select('id, name').ilike('name', '%Salar%').eq('type', 'Expense').limit(1);
-    let salaryHeadId = '';
+    // Get specific Salary Heads
+    const { data: teacherSalaryHeads } = await supabase.from('gl_heads').select('id').ilike('name', '%Teacher Salary%').limit(1);
+    const { data: staffSalaryHeads } = await supabase.from('gl_heads').select('id').ilike('name', '%Staff Salary%').limit(1);
 
-    if (salaryHeads && salaryHeads.length > 0) {
-        salaryHeadId = salaryHeads[0].id;
-    } else {
-        const { data: anyExpense } = await supabase.from('gl_heads').select('id').eq('type', 'Expense').limit(1);
-        if (!anyExpense || anyExpense.length === 0) throw new Error('No Expense GL Head found to book salaries against.');
-        salaryHeadId = anyExpense[0].id;
+    const teacherSalaryId = teacherSalaryHeads?.[0]?.id;
+    const staffSalaryId = staffSalaryHeads?.[0]?.id;
+
+    // Fallback if specific heads not found
+    const { data: generalSalaryHeads } = await supabase.from('gl_heads').select('id').ilike('name', '%Salary%').eq('type', 'Expense').limit(1);
+    const fallbackSalaryId = generalSalaryHeads?.[0]?.id;
+
+    if (!teacherSalaryId && !staffSalaryId && !fallbackSalaryId) {
+        throw new Error('No appropriate Salary Expense Head found.');
     }
+
+    // Prefetch Staff IDs to distinguish types
+    const { data: staffData } = await supabase.from('staff').select('id');
+    const staffIds = new Set(staffData?.map(s => s.id) || []);
 
     // 3. Create Expenses
     for (const slip of run.payslips) {
+        let expenseHeadId = fallbackSalaryId;
+
+        // Determine correct head
+        if (staffIds.has(slip.employee_id)) {
+            expenseHeadId = staffSalaryId || fallbackSalaryId;
+        } else {
+            // Assume Teacher if not Staff (or check Teacher DB if needed, but this is safer fallback for now)
+            expenseHeadId = teacherSalaryId || fallbackSalaryId;
+        }
+
+        if (!expenseHeadId) {
+            console.warn(`Skipping expense for ${slip.employee_name}: Missing Salary GL Head.`);
+            continue;
+        }
+
         await createExpense({
             expense_date: new Date().toISOString(), // Payment Date
             amount: slip.net_salary,
             description: `Salary Payment for ${slip.employee_name} - ${run.month}`,
-            expense_head_id: salaryHeadId,
+            expense_head_id: expenseHeadId,
             payment_mode_gl_id: cashHeadId,
             fiscal_year_id: run.fiscal_year_id
         });
@@ -515,6 +537,23 @@ export const approvePayrollRun = async (runId: string) => {
         .eq('id', runId);
 
     if (updateError) throw updateError;
+
+    // 5. Update Payslip Statuses
+    const { error: slipsError } = await supabase
+        .from('payslips')
+        .update({ status: 'Paid' })
+        .eq('run_id', runId);
+
+    if (slipsError) throw slipsError;
+};
+
+export const deletePayrollRun = async (id: string) => {
+    const { error } = await supabase
+        .from('payroll_runs')
+        .delete()
+        .eq('id', id);
+
+    if (error) throw error;
 };
 
 /* -------------------------------------------------------------------------- */

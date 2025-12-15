@@ -147,14 +147,14 @@ export default function InvoiceDetailsPage() {
                 </div>
             </div>
 
-            <div className="rounded-md border bg-card">
+            <div className="rounded-lg border bg-card overflow-hidden">
                 <div className="p-4 font-semibold border-b">Lines</div>
                 <table className="w-full caption-bottom text-sm">
                     <thead>
-                        <tr className="border-b transition-colors">
-                            <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">GL Head</th>
-                            <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Description</th>
-                            <th className="h-10 px-4 text-right align-middle font-medium text-muted-foreground">Amount</th>
+                        <tr className="border-b transition-colors bg-primary text-primary-foreground hover:bg-primary/90">
+                            <th className="h-10 px-4 text-left align-middle font-medium">GL Head</th>
+                            <th className="h-10 px-4 text-left align-middle font-medium">Description</th>
+                            <th className="h-10 px-4 text-right align-middle font-medium">Amount</th>
                         </tr>
                     </thead>
                     <tbody>

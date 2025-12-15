@@ -19,6 +19,7 @@ export default function InvoicesPage() {
     // Form State
     const [selectedStructureId, setSelectedStructureId] = useState('');
     const [invoiceDueDate, setInvoiceDueDate] = useState(new Date().toISOString().split('T')[0]);
+    const [selectedMonth, setSelectedMonth] = useState('');
 
     // Search State
     const [studentSearch, setStudentSearch] = useState('');
@@ -34,6 +35,14 @@ export default function InvoicesPage() {
     const [monthFilter, setMonthFilter] = useState('');
     const [classFilter, setClassFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
+    const [isListSearchOpen, setIsListSearchOpen] = useState(false);
+
+    const listFilteredStudents = (allStudents || []).filter(student => {
+        if (!student) return false;
+        const name = student.name || '';
+        const search = listSearch.toLowerCase();
+        return name.toLowerCase().includes(search);
+    }).slice(0, 10);
 
     const fetchData = async () => {
         try {
@@ -203,6 +212,7 @@ export default function InvoicesPage() {
             setSelectedStudent(null);
             setStudentSearch('');
             setSelectedStructureId('');
+            setSelectedMonth('');
             setGenerationMode('individual');
             fetchData();
         } catch (error) {
@@ -287,15 +297,60 @@ export default function InvoicesPage() {
                         <option value="Void">Void</option>
                     </select>
 
-                    <div className="relative">
+                    <div className="relative w-full sm:w-[350px]">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <input
                             type="search"
-                            placeholder="Student or Invoice #..."
+                            placeholder="Search Student"
                             value={listSearch}
-                            onChange={(e) => setListSearch(e.target.value)}
+                            onChange={(e) => {
+                                setListSearch(e.target.value);
+                                setIsListSearchOpen(true);
+                            }}
+                            onFocus={() => setIsListSearchOpen(true)}
+                            onBlur={() => setTimeout(() => setIsListSearchOpen(false), 200)}
                             className="flex h-10 w-full rounded-md border border-input bg-background pl-9 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-[350px]"
                         />
+                        {isListSearchOpen && listSearch.length < 1 && listFilteredStudents.length > 0 && ( /* Show when empty on focus */
+                            <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground rounded-md border shadow-md animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
+                                {listFilteredStudents.map(student => (
+                                    <div
+                                        key={student.id}
+                                        className="px-3 py-2 hover:bg-muted cursor-pointer text-sm"
+                                        onMouseDown={(e) => {
+                                            e.preventDefault();
+                                            setListSearch(student.name);
+                                            setIsListSearchOpen(false);
+                                        }}
+                                    >
+                                        <div className="font-medium">{student.name}</div>
+                                        <div className="text-xs text-muted-foreground">Class: {student.class}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {isListSearchOpen && listSearch.length >= 1 && ( /* Show matches when typing */
+                            <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground rounded-md border shadow-md animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
+                                {listFilteredStudents.length > 0 ? (
+                                    listFilteredStudents.map(student => (
+                                        <div
+                                            key={student.id}
+                                            className="px-3 py-2 hover:bg-muted cursor-pointer text-sm"
+                                            onMouseDown={(e) => {
+                                                e.preventDefault();
+                                                setListSearch(student.name);
+                                                setIsListSearchOpen(false);
+                                            }}
+                                        >
+                                            <div className="font-medium">{student.name}</div>
+                                            <div className="text-xs text-muted-foreground">Class: {student.class}</div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="p-2 text-sm text-muted-foreground text-center">No students found</div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
@@ -307,17 +362,17 @@ export default function InvoicesPage() {
             {loading ? (
                 <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : (
-                <div className="rounded-md border bg-card">
+                <div className="rounded-lg border bg-card overflow-hidden">
                     <table className="w-full caption-bottom text-sm">
                         <thead className="[&_tr]:border-b">
-                            <tr className="border-b transition-colors hover:bg-muted/50">
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Invoice #</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Student</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Class</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Month</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Date</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Amount</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
+                            <tr className="border-b transition-colors bg-primary text-primary-foreground hover:bg-primary/90">
+                                <th className="h-12 px-4 text-left align-middle font-medium">Invoice #</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Student</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Class</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Month</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Date</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Amount</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -498,6 +553,8 @@ export default function InvoicesPage() {
                                         <select
                                             name="month"
                                             required
+                                            value={selectedMonth}
+                                            onChange={(e) => setSelectedMonth(e.target.value)}
                                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                         >
                                             <option value="">Select Month</option>
@@ -523,7 +580,7 @@ export default function InvoicesPage() {
 
                             <div className="flex justify-end gap-2 mt-6">
                                 <button type="button" onClick={() => setIsDialogOpen(false)} className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground">Cancel</button>
-                                <button type="submit" disabled={!selectedStructureId || (generationMode === 'individual' && !selectedStudent)} className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <button type="submit" disabled={!selectedStructureId || !selectedMonth || (generationMode === 'individual' && !selectedStudent)} className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed">
                                     {generationMode === 'batch' ? 'Generate Batch Invoices' : 'Create Invoice'}
                                 </button>
                             </div>
