@@ -7,7 +7,8 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
         totalInvoiced: 0,
-        totalCollected: 0,
+        totalFeeCollection: 0,
+        totalIncome: 0,
         totalExpenses: 0,
         outstanding: 0,
         recentTxns: [] as any[],
@@ -34,23 +35,35 @@ export default function DashboardPage() {
 
                 // Calculate Totals
                 const totalInvoiced = invData.reduce((sum, i) => sum + i.total_amount, 0);
+
+                // Separate Fee Collection from Direct Income
                 // @ts-ignore
-                const totalCollected = payData.reduce((sum, p) => sum + p.amount, 0);
+                const totalFeeCollection = payData.filter(p => p.invoice_id).reduce((sum, p) => sum + p.amount, 0);
+                // @ts-ignore
+                const totalIncome = payData.reduce((sum, p) => sum + p.amount, 0);
+
                 const totalExpenses = expData.reduce((sum, e) => sum + e.amount, 0);
 
-                // Outstanding is tricky because of partials, but simplified:
-                // Sum of unpaid invoices? No, Invoiced - Collected is better macro metric
-                const outstanding = totalInvoiced - totalCollected;
+                // Outstanding = Invoiced - Fee Collection (not total income)
+                const outstanding = totalInvoiced - totalFeeCollection;
 
                 // Recent Transactions
-                const payments = payData.map(p => ({
-                    id: p.id,
-                    date: p.payment_date,
+                const payments = payData.map(p => {
                     // @ts-ignore
-                    description: `Fee Payment - ${p.invoice?.student_name}`,
-                    amount: p.amount,
-                    type: 'Income'
-                }));
+                    const description = p.invoice_id
+                        // @ts-ignore
+                        ? `Fee Receipt - ${p.invoice?.student_name}`
+                        // @ts-ignore
+                        : `Income - ${p.income_head?.name || 'Miscellaneous'}`;
+
+                    return {
+                        id: p.id,
+                        date: p.payment_date,
+                        description,
+                        amount: p.amount,
+                        type: 'Income'
+                    };
+                });
 
                 const expenses = expData.map(e => ({
                     id: e.id,
@@ -86,7 +99,8 @@ export default function DashboardPage() {
 
                 setStats({
                     totalInvoiced,
-                    totalCollected,
+                    totalFeeCollection,
+                    totalIncome,
                     totalExpenses,
                     outstanding,
                     recentTxns: allTxns,
@@ -115,7 +129,7 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
 
             {/* KPI Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
                 <StatCard
                     title="Total Assessed Fees"
                     value={stats.totalInvoiced}
@@ -124,10 +138,17 @@ export default function DashboardPage() {
                     iconBg="bg-white/20"
                 />
                 <StatCard
-                    title="Total Collection"
-                    value={stats.totalCollected}
+                    title="Fee Collection"
+                    value={stats.totalFeeCollection}
                     icon={<DollarSign className="h-6 w-6" />}
                     gradient="from-[#10B981] to-[#059669]"
+                    iconBg="bg-white/20"
+                />
+                <StatCard
+                    title="Total Income"
+                    value={stats.totalIncome}
+                    icon={<TrendingUp className="h-6 w-6" />}
+                    gradient="from-[#8B5CF6] to-[#7C3AED]"
                     iconBg="bg-white/20"
                 />
                 <StatCard

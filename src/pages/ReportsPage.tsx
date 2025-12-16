@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Loader2, Filter, Search, X } from 'lucide-react';
+import { Loader2, Filter, Search, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getPayments, getExpenses, getGLHeads, getStudents } from '@/lib/api';
 import { type GLHead } from '@/types';
+import { toNepali } from '@/lib/nepaliDate';
 
 type Transaction = {
     id: string;
@@ -26,6 +27,10 @@ export default function ReportsPage() {
     const [glSearchQuery, setGlSearchQuery] = useState('');
     const [isGlSearchFocused, setIsGlSearchFocused] = useState(false);
     const [focusedIndex, setFocusedIndex] = useState(-1);
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(50); // 50 items per page
 
     // Memoize the filtered list to allow safe indexing
     const filteredHeads = heads.filter(h => h.name.toLowerCase().includes(glSearchQuery.toLowerCase()));
@@ -62,14 +67,21 @@ export default function ReportsPage() {
                     const studentId = p.invoice?.student_id;
                     const className = studentId ? studentClassMap.get(studentId) : undefined;
 
+                    // @ts-ignore
+                    const particulars = p.invoice_id
+                        // @ts-ignore
+                        ? `Fee Receipt - ${p.invoice?.student_name} - ${p.invoice?.month || 'N/A'}`
+                        // @ts-ignore
+                        : `Direct Income - ${p.income_head?.name || 'Miscellaneous'}`;
+
                     return {
                         id: p.id,
                         date: p.payment_date,
                         type: 'Income',
-                        // @ts-ignore
-                        particulars: `Fee Receipt - ${p.invoice?.student_name} - ${p.invoice?.month || 'N/A'}`,
+                        particulars,
                         amount: p.amount,
-                        gl_head: p.payment_mode_gl_id, // This is the Asset GL (Cash/Bank)
+                        // @ts-ignore
+                        gl_head: p.invoice_id ? p.payment_mode_gl_id : p.income_head_id, // Show Income GL for direct income
                         class_name: className
                     };
                 });
@@ -112,7 +124,17 @@ export default function ReportsPage() {
         // }
 
         setFilteredTxns(result);
+
+        // Reset to page 1 when filter changes
+        setCurrentPage(1);
     }, [selectedHeadId, /* selectedClass, */ transactions]);
+
+    // Pagination calculations
+    const totalItems = filteredTxns.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedTxns = filteredTxns.slice(startIndex, endIndex);
 
 
     if (loading) return <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -239,7 +261,8 @@ export default function ReportsPage() {
                 <table className="w-full caption-bottom text-sm">
                     <thead className="[&_tr]:border-b">
                         <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
-                            <th className="h-12 px-4 text-left align-middle font-medium">Date</th>
+                            <th className="h-12 px-4 text-left align-middle font-medium">Date (BS)</th>
+                            <th className="h-12 px-4 text-left align-middle font-medium">Date (AD)</th>
                             <th className="h-12 px-4 text-left align-middle font-medium">Type</th>
                             <th className="h-12 px-4 text-left align-middle font-medium">Particulars</th>
                             <th className="h-12 px-4 text-left align-middle font-medium">Class</th>
@@ -248,9 +271,10 @@ export default function ReportsPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredTxns.map((txn, i) => (
+                        {paginatedTxns.map((txn, i) => (
                             <tr key={i} className="border-b transition-colors hover:bg-muted/50">
-                                <td className="p-4 align-middle">{txn.date}</td>
+                                <td className="p-4 align-middle">{toNepali(txn.date)}</td>
+                                <td className="p-4 align-middle text-muted-foreground">{new Date(txn.date).toLocaleDateString('en-GB')}</td>
                                 <td className="p-4 align-middle">
                                     <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors border-transparent ${txn.type === 'Income' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                                         }`}>
@@ -267,12 +291,64 @@ export default function ReportsPage() {
                                 </td>
                             </tr>
                         ))}
-                        {filteredTxns.length === 0 && (
-                            <tr><td colSpan={6} className="p-4 text-center text-muted-foreground">No transactions found.</td></tr>
+                        {paginatedTxns.length === 0 && (
+                            <tr><td colSpan={7} className="p-4 text-center text-muted-foreground">No transactions found.</td></tr>
                         )}
                     </tbody>
                 </table>
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 bg-card border rounded-lg">
+                    <div className="text-sm text-muted-foreground">
+                        Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className="inline-flex items-center justify-center h-8 w-8 rounded border bg-background hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                .filter(page => {
+                                    // Show first, last, current, and adjacent pages
+                                    return page === 1 ||
+                                        page === totalPages ||
+                                        Math.abs(page - currentPage) <= 1;
+                                })
+                                .map((page, index, array) => (
+                                    <div key={page} className="flex items-center">
+                                        {index > 0 && array[index - 1] !== page - 1 && (
+                                            <span className="px-2 text-muted-foreground">...</span>
+                                        )}
+                                        <button
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`inline-flex items-center justify-center h-8 w-8 rounded border ${currentPage === page
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'bg-background hover:bg-accent'
+                                                }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    </div>
+                                ))}
+                        </div>
+
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className="inline-flex items-center justify-center h-8 w-8 rounded border bg-background hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

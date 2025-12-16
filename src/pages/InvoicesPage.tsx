@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Loader2, Search, X, Filter } from 'lucide-react';
+import { Plus, Loader2, Search, X, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { getInvoices, createInvoice, getFeeStructures, getFiscalYears, getStudents } from '@/lib/api';
 import { type Invoice, type FeeStructure, type FiscalYear, type Student } from '@/types';
 import { usePermission } from '@/hooks/usePermission';
+import NepaliDatePicker from '@/components/NepaliDatePicker';
+import { toNepali } from '@/lib/nepaliDate';
 
 export default function InvoicesPage() {
     const navigate = useNavigate();
@@ -41,6 +43,10 @@ export default function InvoicesPage() {
     const [statusFilter, setStatusFilter] = useState('');
     const [isListSearchOpen, setIsListSearchOpen] = useState(false);
     const [listSelectedIndex, setListSelectedIndex] = useState(-1);
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(50); // 50 items per page
 
     useEffect(() => {
         setListSelectedIndex(-1);
@@ -294,6 +300,18 @@ export default function InvoicesPage() {
         return true;
     });
 
+    // Pagination calculations
+    const totalItems = filteredInvoices.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedInvoices = filteredInvoices.slice(startIndex, endIndex);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [listSearch, monthFilter, classFilter, statusFilter]);
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -424,7 +442,7 @@ export default function InvoicesPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredInvoices.map((inv) => (
+                            {paginatedInvoices.map((inv) => (
                                 <tr
                                     key={inv.id}
                                     className="border-b transition-colors hover:bg-muted/50 cursor-pointer"
@@ -443,7 +461,7 @@ export default function InvoicesPage() {
                                         </span>
                                     </td>
                                     <td className="p-4 align-middle">{inv.month || '-'}</td>
-                                    <td className="p-4 align-middle">{inv.created_at?.split('T')[0]}</td>
+                                    <td className="p-4 align-middle">{toNepali(inv.created_at?.split('T')[0])}</td>
                                     <td className="p-4 align-middle">NPR {inv.total_amount}</td>
                                     <td className="p-4 align-middle">
                                         <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent ${inv.status === 'Paid' ? 'bg-green-500/15 text-green-700' :
@@ -455,11 +473,63 @@ export default function InvoicesPage() {
                                     </td>
                                 </tr>
                             ))}
-                            {filteredInvoices.length === 0 && (
+                            {paginatedInvoices.length === 0 && (
                                 <tr><td colSpan={7} className="p-4 text-center text-muted-foreground">No invoices found.</td></tr>
                             )}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {/* Pagination Controls */}
+            {!loading && totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 bg-card border rounded-lg">
+                    <div className="text-sm text-muted-foreground">
+                        Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className="inline-flex items-center justify-center h-8 w-8 rounded border bg-background hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                .filter(page => {
+                                    // Show first, last, current, and adjacent pages
+                                    return page === 1 ||
+                                        page === totalPages ||
+                                        Math.abs(page - currentPage) <= 1;
+                                })
+                                .map((page, index, array) => (
+                                    <div key={page} className="flex items-center">
+                                        {index > 0 && array[index - 1] !== page - 1 && (
+                                            <span className="px-2 text-muted-foreground">...</span>
+                                        )}
+                                        <button
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`inline-flex items-center justify-center h-8 w-8 rounded border ${currentPage === page
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'bg-background hover:bg-accent'
+                                                }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    </div>
+                                ))}
+                        </div>
+
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className="inline-flex items-center justify-center h-8 w-8 rounded border bg-background hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -613,14 +683,11 @@ export default function InvoicesPage() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium">Due Date</label>
-                                        <input
-                                            type="date"
-                                            name="due_date"
-                                            required
+                                        <label className="text-sm font-medium">Due Date (BS)</label>
+                                        <NepaliDatePicker
                                             value={invoiceDueDate}
-                                            onChange={(e) => setInvoiceDueDate(e.target.value)}
-                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                            onChange={(adDate) => setInvoiceDueDate(adDate)}
+                                            placeholder="Select Due Date"
                                         />
                                     </div>
                                 </div>

@@ -3,6 +3,8 @@ import { Plus, Loader2, Pencil, CheckCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { getFiscalYears, createFiscalYear, setActiveFiscalYear } from '@/lib/api';
 import { type FiscalYear } from '@/types';
+import NepaliDatePicker from '@/components/NepaliDatePicker';
+import { toNepali } from '@/lib/nepaliDate';
 
 
 export default function SettingsPage() {
@@ -11,6 +13,21 @@ export default function SettingsPage() {
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingYear, setEditingYear] = useState<FiscalYear | null>(null);
+    const [yearDataState, setYearDataState] = useState({ start_date: new Date().toISOString().split('T')[0], end_date: new Date().toISOString().split('T')[0] });
+
+    useEffect(() => {
+        if (editingYear) {
+            setYearDataState({
+                start_date: editingYear.start_date,
+                end_date: editingYear.end_date
+            });
+        } else {
+            setYearDataState({
+                start_date: new Date().toISOString().split('T')[0],
+                end_date: new Date().toISOString().split('T')[0]
+            });
+        }
+    }, [editingYear]);
 
     const fetchYears = async () => {
         try {
@@ -33,9 +50,11 @@ export default function SettingsPage() {
 
         const yearData = {
             name: formData.get('name') as string,
-            start_date: formData.get('start_date') as string,
-            end_date: formData.get('end_date') as string,
+            start_date: editingYear ? editingYear.start_date : yearDataState.start_date, // Handle state vs form data mismatch if needed
+            end_date: editingYear ? editingYear.end_date : yearDataState.end_date,
         };
+        // Note: For simplicity in this refactor, we should bind inputs to state to ensure we capture the date picker values.
+        // Let's refactor the form handling below slightly to use state for the dates.
 
         try {
             if (editingYear) {
@@ -108,8 +127,8 @@ export default function SettingsPage() {
                                     {fiscalYears.map((fy) => (
                                         <tr key={fy.id} className="border-b transition-colors hover:bg-muted/50">
                                             <td className="p-4 align-middle font-medium">{fy.name}</td>
-                                            <td className="p-4 align-middle">{fy.start_date}</td>
-                                            <td className="p-4 align-middle">{fy.end_date}</td>
+                                            <td className="p-4 align-middle">{toNepali(fy.start_date)}</td>
+                                            <td className="p-4 align-middle">{toNepali(fy.end_date)}</td>
                                             <td className="p-4 align-middle">
                                                 <div className="flex gap-2">
                                                     {fy.is_active && <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-green-500/15 text-green-700">Active</span>}
@@ -160,12 +179,20 @@ export default function SettingsPage() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">Start Date</label>
-                                    <input type="date" name="start_date" required defaultValue={editingYear?.start_date} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                    <label className="text-sm font-medium">Start Date (BS)</label>
+                                    <NepaliDatePicker
+                                        value={yearDataState.start_date}
+                                        onChange={(d) => setYearDataState(prev => ({ ...prev, start_date: d }))}
+                                    />
+                                    <input type="hidden" name="start_date" value={yearDataState.start_date} />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">End Date</label>
-                                    <input type="date" name="end_date" required defaultValue={editingYear?.end_date} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                    <label className="text-sm font-medium">End Date (BS)</label>
+                                    <NepaliDatePicker
+                                        value={yearDataState.end_date}
+                                        onChange={(d) => setYearDataState(prev => ({ ...prev, end_date: d }))}
+                                    />
+                                    <input type="hidden" name="end_date" value={yearDataState.end_date} />
                                 </div>
                             </div>
                             <div className="flex justify-end gap-2 mt-6">

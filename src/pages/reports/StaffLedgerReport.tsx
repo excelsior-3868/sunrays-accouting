@@ -1,8 +1,9 @@
 
 import { useEffect, useState } from 'react';
-import { getExpenses, getStaffMembers, getTeachers } from '@/lib/api';
+import { getExpenses, getStaffMembers, getTeachers, getFiscalYears } from '@/lib/api';
 import { Loader2, Search, X, Filter } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { type FiscalYear } from '@/types';
 
 type LedgerEntry = {
     id: string;
@@ -17,6 +18,10 @@ export default function StaffLedgerReport() {
     const [staffList, setStaffList] = useState<any[]>([]);
     const [selectedStaffId, setSelectedStaffId] = useState('');
     const [ledger, setLedger] = useState<LedgerEntry[]>([]);
+
+    // Fiscal Year State
+    const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([]);
+    const [selectedFyId, setSelectedFyId] = useState('');
 
     // Search States
     const [searchQuery, setSearchQuery] = useState('');
@@ -39,11 +44,16 @@ export default function StaffLedgerReport() {
     useEffect(() => {
         async function loadHeads() {
             try {
-                // Fetch both Staff and Teachers as both are on payroll
-                const [staff, teachers] = await Promise.all([
+                const [staff, teachers, fyData] = await Promise.all([
                     getStaffMembers(),
-                    getTeachers()
+                    getTeachers(),
+                    getFiscalYears()
                 ]);
+
+                setFiscalYears(fyData || []);
+                // Auto-select active FY
+                const activeFy = fyData?.find((f: any) => f.is_active);
+                if (activeFy) setSelectedFyId(activeFy.id);
 
                 const formattedStaff = staff.map(s => ({
                     id: s.id,
@@ -74,9 +84,21 @@ export default function StaffLedgerReport() {
         try {
             const allExpenses = await getExpenses();
 
-            // Filter expenses that look like salary for this person
+            // Determine Date Range from Selected Fiscal Year
+            const selectedFy = fiscalYears.find(f => f.id === selectedFyId);
+            const startDate = selectedFy ? new Date(selectedFy.start_date) : new Date('1970-01-01');
+            const endDate = selectedFy ? new Date(selectedFy.end_date) : new Date('2100-12-31');
+
+            // Helper to check if date is within range
+            const isWithin = (dateStr: string) => {
+                const d = new Date(dateStr);
+                return d >= startDate && d <= endDate;
+            };
+
+            // Filter expenses that look like salary for this person AND are within FY
             const staffExpenses = allExpenses.filter(e =>
-                e.description?.includes(`Salary Payment for ${staffName}`)
+                e.description?.includes(`Salary Payment for ${staffName}`) &&
+                isWithin(e.expense_date)
             ).map(e => ({
                 id: e.id,
                 date: e.expense_date,
@@ -92,6 +114,23 @@ export default function StaffLedgerReport() {
         }
     };
 
+    // Reload ledger when FY changes
+    useEffect(() => {
+        if (selectedStaffId) {
+            const staff = staffList.find(s => s.id === selectedStaffId);
+            if (staff) {
+                loadLedger(staff.id, staff.name);
+            }
+        }
+    }, [selectedFyId]);
+
+    // Clear ledger when staff selection is cleared
+    useEffect(() => {
+        if (!selectedStaffId) {
+            setLedger([]);
+        }
+    }, [selectedStaffId]);
+
     if (initLoading) return <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
 
     return (
@@ -99,20 +138,31 @@ export default function StaffLedgerReport() {
             <h1 className="text-2xl font-bold tracking-tight">Staff / Teacher Ledger</h1>
 
             {/* Filter Bar */}
-            <div className="flex items-center gap-4 bg-white p-4 rounded-md border shadow-sm">
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <div className="flex items-center gap-4 bg-card p-4 rounded-lg border">
+                <div className="flex items-center gap-2 text-sm font-medium">
                     <Filter className="h-4 w-4 text-muted-foreground" />
                     Filters:
                 </div>
 
+                <select
+                    value={selectedFyId}
+                    onChange={(e) => setSelectedFyId(e.target.value)}
+                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                    <option value="">All Time</option>
+                    {fiscalYears.map(fy => (
+                        <option key={fy.id} value={fy.id}>{fy.name}</option>
+                    ))}
+                </select>
+
                 <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-4 w-4 text-gray-400" />
+                        <Search className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <input
                         type="text"
                         placeholder="Search Staff / Teacher..."
-                        className="pl-10 pr-8 h-9 w-[300px] md:w-[400px] rounded-md border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none placeholder:text-gray-400"
+                        className="pl-10 pr-8 h-9 w-[300px] md:w-[400px] rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         value={searchQuery}
                         onChange={(e) => {
                             setSearchQuery(e.target.value);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Loader2, Trash2, Eye } from 'lucide-react';
+import { Plus, Loader2, Trash2, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -38,6 +38,10 @@ export default function PayrollPage() {
         title: '',
         description: ''
     });
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(50); // 50 items per page
 
     const fetchData = async () => {
         try {
@@ -161,6 +165,18 @@ export default function PayrollPage() {
         return true;
     });
 
+    // Pagination calculations
+    const totalItems = filteredRuns.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedRuns = filteredRuns.slice(startIndex, endIndex);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [statusFilter, monthFilter]);
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -210,7 +226,7 @@ export default function PayrollPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredRuns.map((run) => (
+                            {paginatedRuns.map((run) => (
                                 <tr key={run.id} className="border-b transition-colors hover:bg-muted/50">
                                     <td className="p-4 align-middle font-medium">{run.month}</td>
                                     <td className="p-4 align-middle">{run.created_at?.split('T')[0]}</td>
@@ -243,11 +259,64 @@ export default function PayrollPage() {
                                     </td>
                                 </tr>
                             ))}
-                            {filteredRuns.length === 0 && (
+
+                            {paginatedRuns.length === 0 && (
                                 <tr><td colSpan={4} className="p-4 text-center text-muted-foreground">No payroll runs found.</td></tr>
                             )}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {/* Pagination Controls */}
+            {!loading && totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 bg-card border rounded-lg">
+                    <div className="text-sm text-muted-foreground">
+                        Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className="inline-flex items-center justify-center h-8 w-8 rounded border bg-background hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                .filter(page => {
+                                    // Show first, last, current, and adjacent pages
+                                    return page === 1 ||
+                                        page === totalPages ||
+                                        Math.abs(page - currentPage) <= 1;
+                                })
+                                .map((page, index, array) => (
+                                    <div key={page} className="flex items-center">
+                                        {index > 0 && array[index - 1] !== page - 1 && (
+                                            <span className="px-2 text-muted-foreground">...</span>
+                                        )}
+                                        <button
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`inline-flex items-center justify-center h-8 w-8 rounded border ${currentPage === page
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'bg-background hover:bg-accent'
+                                                }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    </div>
+                                ))}
+                        </div>
+
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className="inline-flex items-center justify-center h-8 w-8 rounded border bg-background hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </button>
+                    </div>
                 </div>
             )}
 

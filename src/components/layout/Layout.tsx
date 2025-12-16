@@ -9,6 +9,7 @@ import {
     BarChart3,
     Receipt,
     TrendingDown,
+    TrendingUp,
     Wallet,
     Calendar,
     BookOpen,
@@ -92,11 +93,14 @@ export default function Layout() {
                         {canViewInvoices && (
                             <NavItem to="/invoices" icon={<Receipt className="h-4 w-4 text-green-600" />} label="Invoices" />
                         )}
-                        {canViewExpenses && (
-                            <NavItem to="/expenses" icon={<TrendingDown className="h-4 w-4 text-red-600" />} label="Expenses" />
-                        )}
                         {canViewPayroll && (
                             <NavItem to="/payroll" icon={<Wallet className="h-4 w-4 text-orange-600" />} label="Payroll" />
+                        )}
+                        {canViewExpenses && (
+                            <NavItem to="/income" icon={<TrendingUp className="h-4 w-4 text-purple-600" />} label="Income" />
+                        )}
+                        {canViewExpenses && (
+                            <NavItem to="/expenses" icon={<TrendingDown className="h-4 w-4 text-red-600" />} label="Expenses" />
                         )}
 
                         <div className="my-2 border-t border-border" />

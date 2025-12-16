@@ -11,6 +11,7 @@ import FeeStructuresPage from '@/pages/FeeStructuresPage';
 import InvoicesPage from '@/pages/InvoicesPage';
 import InvoiceDetailsPage from '@/pages/InvoiceDetailsPage';
 import ExpensesPage from '@/pages/ExpensesPage';
+import IncomePage from '@/pages/IncomePage';
 import SalaryStructuresPage from '@/pages/SalaryStructuresPage';
 import PayrollPage from '@/pages/PayrollPage';
 import ReportsPage from '@/pages/ReportsPage';
@@ -54,8 +55,9 @@ function App() {
                 <InvoiceDetailsPage />
               </ProtectedRoute>
             } />
-
+            <Route path="/income" element={<IncomePage />} />
             <Route path="/expenses" element={<ExpensesPage />} />
+
             <Route path="/salary-structures" element={<SalaryStructuresPage />} />
             <Route path="/settings/staffs" element={<StaffsPage />} />
 

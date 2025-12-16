@@ -74,15 +74,17 @@ export type InvoiceItem = {
 
 export type Payment = {
     id: string;
-    invoice_id: string;
+    invoice_id: string | null; // Nullable for Direct Income
     amount: number;
     payment_date: string;
     fiscal_year_id: string;
     payment_mode_gl_id: string;
+    income_head_id?: string; // For Direct Income
     transaction_reference?: string;
     remarks?: string;
     created_at?: string;
     payment_mode?: GLHead;
+    income_head?: GLHead; // Joined
 };
 
 /* Phase 3: Expenses & Payroll */

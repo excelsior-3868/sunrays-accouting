@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Loader2, Filter } from 'lucide-react';
+import { Plus, Loader2, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { getExpenses, createExpense, getGLHeads, getFiscalYears } from '@/lib/api';
 import { type Expense, type GLHead, type FiscalYear } from '@/types';
@@ -15,6 +15,8 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import NepaliDatePicker from '@/components/NepaliDatePicker';
+import { toNepali } from '@/lib/nepaliDate';
 
 export default function ExpensesPage() {
     const { can } = usePermission();
@@ -31,6 +33,10 @@ export default function ExpensesPage() {
 
     // Filters
     const [selectedHeadFilter, setSelectedHeadFilter] = useState('');
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(50); // Show 50 items per page
 
     const fetchData = async () => {
         try {
@@ -127,6 +133,19 @@ export default function ExpensesPage() {
         selectedHeadFilter ? exp.expense_head_id === selectedHeadFilter : true
     );
 
+    // Pagination calculations
+    const totalItems = filteredExpenses.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedExpenses = filteredExpenses.slice(startIndex, endIndex);
+
+    // Reset to page 1 when filter changes
+    const handleFilterChange = (val: string) => {
+        setSelectedHeadFilter(val);
+        setCurrentPage(1);
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -139,18 +158,37 @@ export default function ExpensesPage() {
             </div>
 
             {/* Filter Bar */}
-            <div className="flex flex-wrap items-center gap-4 bg-card p-4 rounded-lg border">
-                <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Filters:</span>
+            <div className="flex flex-wrap items-center gap-4 bg-card p-4 rounded-lg border justify-between">
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        <Filter className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Filters:</span>
+                    </div>
+                    <div className="w-[300px]">
+                        <SearchableSelect
+                            options={[
+                                { value: '', label: 'All Expense Heads', group: 'Filter' },
+                                ...expenseOptions
+                            ]}
+                            value={selectedHeadFilter}
+                            onChange={handleFilterChange}
+                            placeholder="Search Expense Heads..."
+                        />
+                    </div>
                 </div>
-                <div className="w-[300px]">
-                    <SearchableSelect
-                        options={[{ value: '', label: 'All Expense Heads', group: 'Filter' }, ...expenseOptions]}
-                        value={selectedHeadFilter}
-                        onChange={(val) => setSelectedHeadFilter(val)}
-                        placeholder="Search Expense Heads..."
-                    />
+
+                {/* Total Amount Display */}
+                <div className="flex items-center gap-2 bg-red-600 px-4 py-2 rounded-md">
+                    <span className="text-sm font-medium text-white">
+                        {selectedHeadFilter
+                            ? `${expenseOptions.find(opt => opt.value === selectedHeadFilter)?.label || 'Selected'} Total:`
+                            : 'Total Expenses:'}
+                    </span>
+                    <span className="text-lg font-bold text-white">
+                        NPR {filteredExpenses
+                            .reduce((sum, expense) => sum + expense.amount, 0)
+                            .toLocaleString()}
+                    </span>
                 </div>
             </div>
 
@@ -161,28 +199,82 @@ export default function ExpensesPage() {
                     <table className="w-full caption-bottom text-sm">
                         <thead className="[&_tr]:border-b">
                             <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
-                                <th className="h-12 px-4 text-left align-middle font-medium">Date</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Date (BS)</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Date (AD)</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium">Expense Head</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Description</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Paid Via</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Remarks</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Payment Mode</th>
                                 <th className="h-12 px-4 text-right align-middle font-medium">Amount</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredExpenses.map((exp) => (
+                            {paginatedExpenses.map((exp) => (
                                 <tr key={exp.id} className="border-b transition-colors hover:bg-muted/50">
-                                    <td className="p-4 align-middle">{exp.expense_date}</td>
+                                    <td className="p-4 align-middle">{toNepali(exp.expense_date)}</td>
+                                    <td className="p-4 align-middle text-muted-foreground">{new Date(exp.expense_date).toLocaleDateString('en-GB')}</td>
                                     <td className="p-4 align-middle font-medium">{exp.expense_head?.name}</td>
                                     <td className="p-4 align-middle">{exp.description}</td>
                                     <td className="p-4 align-middle">{exp.payment_mode?.name}</td>
-                                    <td className="p-4 align-middle text-right">{exp.amount}</td>
+                                    <td className="p-4 align-middle text-right font-semibold">NPR {exp.amount.toLocaleString()}</td>
                                 </tr>
                             ))}
-                            {expenses.length === 0 && (
-                                <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">No expenses recorded.</td></tr>
+                            {paginatedExpenses.length === 0 && (
+                                <tr><td colSpan={6} className="p-4 text-center text-muted-foreground">No expenses found.</td></tr>
                             )}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {/* Pagination Controls */}
+            {!loading && totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 bg-card border rounded-lg">
+                    <div className="text-sm text-muted-foreground">
+                        Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className="inline-flex items-center justify-center h-8 w-8 rounded border bg-background hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                .filter(page => {
+                                    // Show first, last, current, and adjacent pages
+                                    return page === 1 ||
+                                        page === totalPages ||
+                                        Math.abs(page - currentPage) <= 1;
+                                })
+                                .map((page, index, array) => (
+                                    <div key={page} className="flex items-center">
+                                        {index > 0 && array[index - 1] !== page - 1 && (
+                                            <span className="px-2 text-muted-foreground">...</span>
+                                        )}
+                                        <button
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`inline-flex items-center justify-center h-8 w-8 rounded border ${currentPage === page
+                                                    ? 'bg-primary text-primary-foreground'
+                                                    : 'bg-background hover:bg-accent'
+                                                }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    </div>
+                                ))}
+                        </div>
+
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className="inline-flex items-center justify-center h-8 w-8 rounded border bg-background hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -231,14 +323,11 @@ export default function ExpensesPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Date</label>
-                                <input
-                                    type="date"
-                                    name="expense_date"
-                                    required
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                <label className="text-sm font-medium">Date (BS)</label>
+                                <NepaliDatePicker
                                     value={newExpenseState.expense_date}
-                                    onChange={e => setNewExpenseState({ ...newExpenseState, expense_date: e.target.value })}
+                                    onChange={(adDate) => setNewExpenseState({ ...newExpenseState, expense_date: adDate })}
+                                    placeholder="Select Expense Date"
                                 />
                             </div>
 
@@ -283,7 +372,7 @@ export default function ExpensesPage() {
                     <div className="py-4 space-y-2 text-sm">
                         <div className="grid grid-cols-3 gap-2">
                             <span className="font-semibold text-muted-foreground">Date:</span>
-                            <span className="col-span-2">{newExpenseState.expense_date}</span>
+                            <span className="col-span-2">{toNepali(newExpenseState.expense_date)}</span>
                         </div>
                         <div className="grid grid-cols-3 gap-2">
                             <span className="font-semibold text-muted-foreground">Head:</span>

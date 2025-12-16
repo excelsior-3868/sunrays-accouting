@@ -152,7 +152,7 @@ export const deleteFeeStructure = async (id: string) => {
 export const getInvoices = async () => {
     const { data, error } = await supabase
         .from('invoices')
-        .select('*')
+        .select('*, items:invoice_items(*, gl_head:gl_heads(*))')
         .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -281,10 +281,29 @@ export const recordPayment = async (payment: Omit<Payment, 'id' | 'created_at' |
     return data;
 };
 
+export const recordDirectIncome = async (income: Omit<Payment, 'id' | 'created_at' | 'payment_mode' | 'income_head' | 'invoice_id'> & { income_head_id: string }) => {
+    // Validation: Direct Income must have income_head_id
+    if (!income.income_head_id) {
+        throw new Error('income_head_id is required for direct income');
+    }
+
+    const { data, error } = await supabase
+        .from('payments')
+        .insert([{
+            ...income,
+            invoice_id: null // Explicitly null for direct income
+        }])
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
+};
+
 export const getPayments = async () => {
     const { data, error } = await supabase
         .from('payments')
-        .select('*, payment_mode:gl_heads!payment_mode_gl_id(*), invoice:invoices(*)')
+        .select('*, payment_mode:gl_heads!payment_mode_gl_id(*), invoice:invoices(*), income_head:gl_heads!income_head_id(*)')
         .order('payment_date', { ascending: false });
 
     if (error) throw error;
