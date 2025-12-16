@@ -184,7 +184,7 @@ export default function StaffLedgerReport() {
                 <div className="rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
                     <table className="w-full caption-bottom text-sm">
                         <thead className="[&_tr]:border-b">
-                            <tr className="border-b transition-colors bg-muted/50">
+                            <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
                                 <th className="h-12 px-4 text-left align-middle font-medium">Date</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium">Description</th>
                                 <th className="h-12 px-4 text-right align-middle font-medium">Amount Paid</th>

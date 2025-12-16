@@ -203,11 +203,11 @@ export default function StudentLedgerReport() {
                 <div className="rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
                     <table className="w-full caption-bottom text-sm">
                         <thead className="[&_tr]:border-b">
-                            <tr className="border-b transition-colors bg-muted/50">
+                            <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
                                 <th className="h-12 px-4 text-left align-middle font-medium">Date</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium">Particulars</th>
-                                <th className="h-12 px-4 text-right align-middle font-medium text-red-600">Debit (Due)</th>
-                                <th className="h-12 px-4 text-right align-middle font-medium text-green-600">Credit (Paid)</th>
+                                <th className="h-12 px-4 text-right align-middle font-medium">Debit (Due)</th>
+                                <th className="h-12 px-4 text-right align-middle font-medium">Credit (Paid)</th>
                                 <th className="h-12 px-4 text-right align-middle font-medium">Balance</th>
                             </tr>
                         </thead>

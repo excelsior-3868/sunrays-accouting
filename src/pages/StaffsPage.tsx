@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, X, Search, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Search, Loader2, Filter } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
     getTeachers, createTeacher, updateTeacher, deleteTeacher,
@@ -22,6 +22,10 @@ export default function StaffsPage() {
     // Dialog
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+
+    // Search Dropdown State
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [selectedIndex, setSelectedIndex] = useState(-1);
 
     // Generic Form Data
     const [formData, setFormData] = useState({
@@ -60,6 +64,44 @@ export default function StaffsPage() {
     const filteredList = activeTab === 'teachers'
         ? teachers.filter(t => `${t.first_name} ${t.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()))
         : staff.filter(s => `${s.first_name} ${s.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    // Reset selected index when search query changes
+    useEffect(() => {
+        setSelectedIndex(-1);
+    }, [searchQuery, isSearchOpen]);
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        const listToNavigate = filteredList.slice(0, 10); // Use same slice as render
+        if (!isSearchOpen) {
+            if (e.key === 'ArrowDown' || e.key === 'Enter') {
+                setIsSearchOpen(true);
+            }
+            return;
+        }
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                setSelectedIndex(prev => prev < listToNavigate.length - 1 ? prev + 1 : prev);
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                setSelectedIndex(prev => prev > 0 ? prev - 1 : 0);
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (selectedIndex >= 0 && listToNavigate[selectedIndex]) {
+                    const item = listToNavigate[selectedIndex];
+                    const name = `${item.first_name} ${item.last_name}`;
+                    setSearchQuery(name);
+                    setIsSearchOpen(false);
+                }
+                break;
+            case 'Escape':
+                setIsSearchOpen(false);
+                break;
+        }
+    };
 
     const handleOpenCreate = () => {
         setEditingId(null);
@@ -176,19 +218,54 @@ export default function StaffsPage() {
             </div>
 
             {/* Search */}
-            <div className="relative w-full max-w-sm">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <input
-                    placeholder={`Search ${activeTab}...`}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-8 flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                />
+            {/* Filter Bar */}
+            <div className="flex flex-wrap items-center gap-4 bg-card p-4 rounded-lg border">
+                <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Filters:</span>
+                </div>
+                <div className="relative w-full max-w-sm">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <input
+                        placeholder={`Search ${activeTab}...`}
+                        value={searchQuery}
+                        onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setIsSearchOpen(true);
+                        }}
+                        onFocus={() => setIsSearchOpen(true)}
+                        onBlur={() => setTimeout(() => setIsSearchOpen(false), 200)}
+                        onKeyDown={handleKeyDown}
+                        className="pl-8 flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    />
+                    {isSearchOpen && (searchQuery.length > 0 || filteredList.length > 0) && (
+                        <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground rounded-md border shadow-md animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
+                            {filteredList.length > 0 ? (
+                                filteredList.slice(0, 10).map((item: any, index: number) => (
+                                    <div
+                                        key={item.id}
+                                        className={`px-3 py-2 cursor-pointer text-sm ${index === selectedIndex ? "bg-accent" : "hover:bg-accent"}`}
+                                        onMouseDown={(e) => {
+                                            e.preventDefault();
+                                            setSearchQuery(`${item.first_name} ${item.last_name}`);
+                                            setIsSearchOpen(false);
+                                        }}
+                                    >
+                                        <div className="font-medium">{item.first_name} {item.last_name}</div>
+                                        <div className="text-xs text-muted-foreground">{item.designation} - {item.category}</div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="p-2 text-sm text-muted-foreground text-center">No results found.</div>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* List */}
-            <div className="rounded-md border bg-card">
-                <div className="grid grid-cols-12 gap-4 p-4 border-b font-medium text-sm text-muted-foreground">
+            <div className="rounded-md border bg-card overflow-hidden">
+                <div className="grid grid-cols-12 gap-4 p-4 border-b font-medium text-sm transition-colors bg-blue-600 text-primary-foreground">
                     <div className="col-span-4">Name</div>
                     <div className="col-span-3">Role/Designation</div>
                     <div className="col-span-3">Contact</div>

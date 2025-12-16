@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getRoles } from '@/lib/api';
-import { Search, Loader2, UserPlus, Eye, EyeOff, Pencil, Trash2 } from 'lucide-react';
+import { Search, Loader2, UserPlus, Eye, EyeOff, Pencil, Trash2, Filter } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { type Role } from '@/types';
 import { usePermission } from '@/hooks/usePermission';
@@ -48,6 +48,45 @@ export default function UsersPage() {
 
     const [createLoading, setCreateLoading] = useState(false);
     const [updateLoading, setUpdateLoading] = useState(false);
+
+    // Filtered Users Logic (Moved up for accessibility)
+    const filteredUsers = users.filter(user =>
+        user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Keyboard Navigation
+    const [selectedIndex, setSelectedIndex] = useState(-1);
+
+    useEffect(() => {
+        setSelectedIndex(-1);
+    }, [searchQuery]);
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (!isSearchOpen || filteredUsers.length === 0) return;
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                setSelectedIndex(prev => prev < filteredUsers.length - 1 ? prev + 1 : prev);
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                setSelectedIndex(prev => prev > 0 ? prev - 1 : -1);
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (selectedIndex >= 0 && filteredUsers[selectedIndex]) {
+                    const user = filteredUsers[selectedIndex];
+                    setSearchQuery(user.full_name || user.email);
+                    setIsSearchOpen(false);
+                }
+                break;
+            case 'Escape':
+                setIsSearchOpen(false);
+                break;
+        }
+    };
 
     useEffect(() => {
         fetchData();
@@ -235,11 +274,6 @@ export default function UsersPage() {
         }
     };
 
-    const filteredUsers = users.filter(user =>
-        user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
     return (
         <div className="space-y-6">
 
@@ -251,7 +285,7 @@ export default function UsersPage() {
                 {canManage && (
                     <button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                        className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                     >
                         <UserPlus className="h-4 w-4" />
                         Add User
@@ -259,7 +293,12 @@ export default function UsersPage() {
                 )}
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* Filter Bar */}
+            <div className="flex flex-wrap items-center gap-4 bg-card p-4 rounded-lg border">
+                <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Filters:</span>
+                </div>
                 <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <input
@@ -272,15 +311,16 @@ export default function UsersPage() {
                         }}
                         onFocus={() => setIsSearchOpen(true)}
                         onBlur={() => setTimeout(() => setIsSearchOpen(false), 200)}
+                        onKeyDown={handleKeyDown}
                         className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pl-9 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     />
                     {isSearchOpen && (searchQuery.length > 0 || users.length > 0) && (
                         <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground rounded-md border shadow-md animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
                             {filteredUsers.length > 0 ? (
-                                filteredUsers.map(user => (
+                                filteredUsers.map((user, index) => (
                                     <div
                                         key={user.id}
-                                        className="px-3 py-2 hover:bg-muted cursor-pointer text-sm"
+                                        className={`px-3 py-2 cursor-pointer text-sm ${index === selectedIndex ? "bg-accent" : "hover:bg-accent"}`}
                                         onMouseDown={(e) => {
                                             e.preventDefault();
                                             setSearchQuery(user.full_name || user.email);
@@ -303,7 +343,7 @@ export default function UsersPage() {
                 <div className="relative w-full overflow-auto">
                     <table className="w-full caption-bottom text-sm text-left">
                         <thead className="[&_tr]:border-b">
-                            <tr className="border-b transition-colors bg-primary text-primary-foreground hover:bg-primary/90 data-[state=selected]:bg-muted">
+                            <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90 data-[state=selected]:bg-muted">
                                 <th className="h-10 px-4 text-left align-middle font-medium">Name</th>
                                 <th className="h-10 px-4 text-left align-middle font-medium">Email</th>
                                 <th className="h-10 px-4 text-left align-middle font-medium">Role</th>
@@ -340,7 +380,7 @@ export default function UsersPage() {
                                                 <div className="flex items-center justify-end gap-2">
                                                     <button
                                                         onClick={() => handleEdit(user)}
-                                                        className="inline-flex items-center justify-center rounded-md bg-blue-50 p-2 text-blue-600 transition-colors hover:bg-blue-100"
+                                                        className="inline-flex items-center justify-center rounded-md bg-primary/10 p-2 text-primary transition-colors hover:bg-primary/20"
                                                         title="Edit User"
                                                     >
                                                         <Pencil className="h-4 w-4" />
@@ -456,7 +496,7 @@ export default function UsersPage() {
                                 <button
                                     type="submit"
                                     disabled={createLoading}
-                                    className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                                    className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                                 >
                                     {createLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                                     Create User
@@ -507,7 +547,7 @@ export default function UsersPage() {
                                 <button
                                     type="submit"
                                     disabled={updateLoading}
-                                    className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                                    className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                                 >
                                     {updateLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                                     Update User

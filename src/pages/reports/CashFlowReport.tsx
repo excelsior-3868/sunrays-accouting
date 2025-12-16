@@ -1,8 +1,6 @@
-
 import { useEffect, useState } from 'react';
 import { getExpenses, getPayments } from '@/lib/api';
 import { Loader2, DollarSign, ArrowDownRight, ArrowUpRight } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function CashFlowReport() {
     const [loading, setLoading] = useState(true);
@@ -74,38 +72,30 @@ export default function CashFlowReport() {
 
             {/* Summary Cards */}
             <div className="grid gap-4 md:grid-cols-3">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Inflow</CardTitle>
-                        <ArrowDownRight className="h-4 w-4 text-green-600" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-green-600">{formatCurrency(totalInflow)}</div>
-                        <p className="text-xs text-muted-foreground">From Fee Collections</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Outflow</CardTitle>
-                        <ArrowUpRight className="h-4 w-4 text-red-600" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-red-600">{formatCurrency(totalOutflow)}</div>
-                        <p className="text-xs text-muted-foreground">Expenses & Payroll</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Net Cash Flow</CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className={`text-2xl font-bold ${netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {formatCurrency(netCashFlow)}
-                        </div>
-                        <p className="text-xs text-muted-foreground">Inflow - Outflow</p>
-                    </CardContent>
-                </Card>
+                <StatCard
+                    title="Total Inflow"
+                    value={totalInflow}
+                    icon={<ArrowDownRight className="h-6 w-6" />}
+                    gradient="from-[#10B981] to-[#059669]"
+                    iconBg="bg-white/20"
+                    description="From Fee Collections"
+                />
+                <StatCard
+                    title="Total Outflow"
+                    value={totalOutflow}
+                    icon={<ArrowUpRight className="h-6 w-6" />}
+                    gradient="from-[#FF5757] to-[#E63946]"
+                    iconBg="bg-white/20"
+                    description="Expenses & Payroll"
+                />
+                <StatCard
+                    title="Net Cash Flow"
+                    value={netCashFlow}
+                    icon={<DollarSign className="h-6 w-6" />}
+                    gradient={netCashFlow >= 0 ? "from-[#5B7FED] to-[#4A6BD9]" : "from-[#FF5757] to-[#E63946]"}
+                    iconBg="bg-white/20"
+                    description="Inflow - Outflow"
+                />
             </div>
 
             {/* Recent Transactions Table (Mixed) */}
@@ -116,7 +106,7 @@ export default function CashFlowReport() {
                 <div className="max-h-[500px] overflow-auto">
                     <table className="w-full caption-bottom text-sm">
                         <thead className="[&_tr]:border-b sticky top-0 bg-secondary/90 backdrop-blur-sm">
-                            <tr className="border-b transition-colors bg-muted/50">
+                            <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
                                 <th className="h-10 px-4 text-left align-middle font-medium">Date</th>
                                 <th className="h-10 px-4 text-left align-middle font-medium">Description</th>
                                 <th className="h-10 px-4 text-left align-middle font-medium">Type</th>
@@ -148,6 +138,41 @@ export default function CashFlowReport() {
                     </table>
                 </div>
             </div>
+        </div>
+    );
+}
+
+function StatCard({
+    title,
+    value,
+    icon,
+    gradient,
+    iconBg,
+    description
+}: {
+    title: string;
+    value: number;
+    icon: React.ReactNode;
+    gradient: string;
+    iconBg: string;
+    description?: string;
+}) {
+    return (
+        <div className={`relative overflow-hidden rounded-xl shadow-lg bg-gradient-to-br ${gradient} text-white transition-all duration-300 hover:shadow-xl hover:scale-105`}>
+            <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${iconBg}`}>
+                        {icon}
+                    </div>
+                </div>
+                <div className="space-y-1">
+                    <p className="text-sm font-medium text-white/90">{title}</p>
+                    <p className="text-3xl font-bold">NPR {value.toLocaleString()}</p>
+                    {description && <p className="text-xs text-white/80">{description}</p>}
+                </div>
+            </div>
+            {/* Decorative circle */}
+            <div className="absolute -right-6 -bottom-6 h-24 w-24 rounded-full bg-white/10"></div>
         </div>
     );
 }

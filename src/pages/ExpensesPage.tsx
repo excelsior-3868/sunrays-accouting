@@ -1,10 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, Filter } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { getExpenses, createExpense, getGLHeads, getFiscalYears } from '@/lib/api';
 import { type Expense, type GLHead, type FiscalYear } from '@/types';
 import SearchableSelect from '@/components/SearchableSelect';
 import { usePermission } from '@/hooks/usePermission';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function ExpensesPage() {
     const { can } = usePermission();
@@ -12,6 +22,7 @@ export default function ExpensesPage() {
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
     // Form Data
     const [expenseHeads, setExpenseHeads] = useState<GLHead[]>([]);
@@ -56,6 +67,10 @@ export default function ExpensesPage() {
         e.preventDefault();
         if (!can('expenses.manage')) return;
 
+        setIsConfirmDialogOpen(true);
+    };
+
+    const handleConfirmPost = async () => {
         try {
             await createExpense({
                 fiscal_year_id: newExpenseState.fiscal_year_id,
@@ -65,6 +80,7 @@ export default function ExpensesPage() {
                 expense_date: newExpenseState.expense_date,
                 description: newExpenseState.description,
             });
+            setIsConfirmDialogOpen(false);
             setIsDialogOpen(false);
             // Reset form
             setNewExpenseState(prev => ({ ...prev, amount: '', description: '' }));
@@ -115,22 +131,26 @@ export default function ExpensesPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">Expenses</h1>
+                {can('expenses.manage') && (
+                    <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
+                        <Plus className="mr-2 h-4 w-4" /> Add Expense
+                    </button>
+                )}
+            </div>
 
+            {/* Filter Bar */}
+            <div className="flex flex-wrap items-center gap-4 bg-card p-4 rounded-lg border">
                 <div className="flex items-center gap-2">
-                    <div className="w-[300px]">
-                        <SearchableSelect
-                            options={[{ value: '', label: 'All Expense Heads', group: 'Filter' }, ...expenseOptions]}
-                            value={selectedHeadFilter}
-                            onChange={(val) => setSelectedHeadFilter(val)}
-                            placeholder="Search Expense Heads..."
-                        />
-                    </div>
-
-                    {can('expenses.manage') && (
-                        <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
-                            <Plus className="mr-2 h-4 w-4" /> Add Expense
-                        </button>
-                    )}
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Filters:</span>
+                </div>
+                <div className="w-[300px]">
+                    <SearchableSelect
+                        options={[{ value: '', label: 'All Expense Heads', group: 'Filter' }, ...expenseOptions]}
+                        value={selectedHeadFilter}
+                        onChange={(val) => setSelectedHeadFilter(val)}
+                        placeholder="Search Expense Heads..."
+                    />
                 </div>
             </div>
 
@@ -140,7 +160,7 @@ export default function ExpensesPage() {
                 <div className="rounded-lg border bg-card overflow-hidden">
                     <table className="w-full caption-bottom text-sm">
                         <thead className="[&_tr]:border-b">
-                            <tr className="border-b transition-colors bg-primary text-primary-foreground hover:bg-primary/90">
+                            <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
                                 <th className="h-12 px-4 text-left align-middle font-medium">Date</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium">Expense Head</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium">Description</th>
@@ -251,6 +271,51 @@ export default function ExpensesPage() {
                     </div>
                 </div>
             )}
+
+            <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Confirm Expense Details</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Please review the expense details before posting.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="py-4 space-y-2 text-sm">
+                        <div className="grid grid-cols-3 gap-2">
+                            <span className="font-semibold text-muted-foreground">Date:</span>
+                            <span className="col-span-2">{newExpenseState.expense_date}</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                            <span className="font-semibold text-muted-foreground">Head:</span>
+                            <span className="col-span-2">
+                                {expenseHeads.find(h => h.id === newExpenseState.expense_head_id)?.name || 'Unknown'}
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                            <span className="font-semibold text-muted-foreground">Paid Via:</span>
+                            <span className="col-span-2">
+                                {assetHeads.find(h => h.id === newExpenseState.payment_mode_gl_id)?.name || 'Unknown'}
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                            <span className="font-semibold text-muted-foreground">Amount:</span>
+                            <span className="col-span-2 font-bold text-red-600">NPR {Number(newExpenseState.amount).toLocaleString()}</span>
+                        </div>
+                        {newExpenseState.description && (
+                            <div className="grid grid-cols-3 gap-2">
+                                <span className="font-semibold text-muted-foreground">Note:</span>
+                                <span className="col-span-2 italic">{newExpenseState.description}</span>
+                            </div>
+                        )}
+                    </div>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmPost} className="bg-primary hover:bg-primary/90">
+                            Confirm & Post
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

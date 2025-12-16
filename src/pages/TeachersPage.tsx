@@ -33,7 +33,7 @@ export default function TeachersPage() {
                 <div className="rounded-lg border bg-card overflow-hidden">
                     <table className="w-full caption-bottom text-sm">
                         <thead className="[&_tr]:border-b">
-                            <tr className="border-b transition-colors bg-primary text-primary-foreground hover:bg-primary/90">
+                            <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
                                 <th className="h-12 px-4 text-left align-middle font-medium">Name</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium">Email</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium">Phone</th>

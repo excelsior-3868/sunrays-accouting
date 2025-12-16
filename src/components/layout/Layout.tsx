@@ -51,10 +51,10 @@ export default function Layout() {
         <div className="flex h-screen bg-muted/40">
             {/* Sidebar */}
             <aside className="fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r bg-background sm:flex">
-                <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+                <div className="flex h-20 items-center border-b px-4 lg:px-6">
                     <div className="flex items-center gap-2 font-semibold">
-                        <img src="/logo.png" alt="Logo" className="h-8 w-8 object-contain" />
-                        <span className="">Sunrays Accounting</span>
+                        <img src="/logo.png" alt="Logo" className="h-16 w-auto object-contain" />
+                        <span className="">School Lekha</span>
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto py-4">

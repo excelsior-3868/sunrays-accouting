@@ -81,8 +81,8 @@ export default function SalarySheetReport() {
                     <CardContent className="p-0">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
-                                <thead className="bg-muted/50 border-b">
-                                    <tr>
+                                <thead className="[&_tr]:border-b">
+                                    <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
                                         <th className="h-10 px-4 text-left font-semibold border-r">S.N.</th>
                                         <th className="h-10 px-4 text-left font-semibold border-r">Employee Name</th>
                                         <th className="h-10 px-4 text-right font-semibold border-r">Basic Earnings</th>

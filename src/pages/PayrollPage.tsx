@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Plus, Loader2, Trash2, Eye } from 'lucide-react';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from '@/components/ui/use-toast';
 import { getPayrollRuns, generatePayrollRun, getFiscalYears, approvePayrollRun, getPayrollRunDetails, deletePayrollRun } from '@/lib/api';
 import { type PayrollRun, type FiscalYear } from '@/types';
@@ -14,6 +24,20 @@ export default function PayrollPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState<'All' | 'Draft' | 'Posted'>('All');
     const [monthFilter, setMonthFilter] = useState('');
+
+    const [alertConfig, setAlertConfig] = useState<{
+        isOpen: boolean;
+        type: 'approve' | 'delete';
+        id: string | null;
+        title: string;
+        description: string;
+    }>({
+        isOpen: false,
+        type: 'approve',
+        id: null,
+        title: '',
+        description: ''
+    });
 
     const fetchData = async () => {
         try {
@@ -60,9 +84,20 @@ export default function PayrollPage() {
         }
     };
 
-    const handleApprove = async (id: string) => {
+    const handleApprove = (id: string) => {
         if (!can('payroll.manage')) return;
-        if (!confirm('Are you sure you want to approve and pay for this payroll run? This will create expense records and cannot be undone.')) return;
+        setAlertConfig({
+            isOpen: true,
+            type: 'approve',
+            id,
+            title: 'Approve Payroll Run',
+            description: 'Are you sure you want to approve and pay for this payroll run? This will create expense records and cannot be undone.'
+        });
+    };
+
+    const confirmApprove = async () => {
+        const id = alertConfig.id;
+        if (!id) return;
         try {
             await approvePayrollRun(id);
             fetchData();
@@ -70,12 +105,25 @@ export default function PayrollPage() {
         } catch (error) {
             console.error('Error approving payroll:', error);
             toast({ variant: "destructive", title: "Error", description: "Failed to approve payroll." });
+        } finally {
+            setAlertConfig(prev => ({ ...prev, isOpen: false }));
         }
     };
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = (id: string) => {
         if (!can('payroll.manage')) return;
-        if (!confirm('Are you sure you want to delete this payroll run? All associated payslips will be removed. This cannot be undone.')) return;
+        setAlertConfig({
+            isOpen: true,
+            type: 'delete',
+            id,
+            title: 'Delete Payroll Run',
+            description: 'Are you sure you want to delete this payroll run? All associated payslips will be removed. This cannot be undone.'
+        });
+    };
+
+    const confirmDelete = async () => {
+        const id = alertConfig.id;
+        if (!id) return;
         try {
             await deletePayrollRun(id);
             fetchData();
@@ -83,6 +131,8 @@ export default function PayrollPage() {
         } catch (error) {
             console.error('Error deleting payroll:', error);
             toast({ variant: "destructive", title: "Error", description: "Failed to delete payroll run." });
+        } finally {
+            setAlertConfig(prev => ({ ...prev, isOpen: false }));
         }
     };
 
@@ -152,7 +202,7 @@ export default function PayrollPage() {
                 <div className="rounded-lg border bg-card overflow-hidden">
                     <table className="w-full caption-bottom text-sm">
                         <thead className="[&_tr]:border-b">
-                            <tr className="border-b transition-colors bg-primary text-primary-foreground hover:bg-primary/90">
+                            <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
                                 <th className="h-12 px-4 text-left align-middle font-medium">Month</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium">Run Date</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium">Approve Status</th>
@@ -216,7 +266,12 @@ export default function PayrollPage() {
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Month</label>
-                                <input name="month" required placeholder="e.g. Baisakh" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                <select name="month" required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                                    <option value="" disabled selected>Select Month</option>
+                                    {['Baisakh', 'Jestha', 'Asar', 'Shrawan', 'Bhadra', 'Ashwin', 'Kartik', 'Mangsir', 'Poush', 'Magh', 'Falgun', 'Chaitra'].map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                    ))}
+                                </select>
                             </div>
                             <div className="flex justify-end gap-2 mt-6">
                                 <button type="button" onClick={() => setIsDialogOpen(false)} className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground">Cancel</button>
@@ -245,8 +300,8 @@ export default function PayrollPage() {
 
                         <div className="rounded-md border">
                             <table className="w-full text-sm">
-                                <thead className="bg-muted/50">
-                                    <tr>
+                                <thead className="[&_tr]:border-b">
+                                    <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
                                         <th className="h-10 px-4 text-left font-medium">Employee</th>
                                         <th className="h-10 px-4 text-right font-medium">Earnings</th>
                                         <th className="h-10 px-4 text-right font-medium">Deductions</th>
@@ -289,6 +344,26 @@ export default function PayrollPage() {
                     </div>
                 </div>
             )}
+            {/* Alert Dialog */}
+            <AlertDialog open={alertConfig.isOpen} onOpenChange={(open) => setAlertConfig(prev => ({ ...prev, isOpen: open }))}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{alertConfig.title}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {alertConfig.description}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={alertConfig.type === 'approve' ? confirmApprove : confirmDelete}
+                            className={alertConfig.type === 'delete' ? 'bg-red-600 hover:bg-red-700' : ''}
+                        >
+                            {alertConfig.type === 'approve' ? 'Approve' : 'Delete'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

@@ -120,7 +120,7 @@ export default function ReportsPage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold tracking-tight">Reports</h1>
+                <h1 className="text-2xl font-bold tracking-tight">Day Book</h1>
                 <div className="flex gap-2">
                     <button
                         onClick={() => setActiveTab('daybook')}
@@ -238,7 +238,7 @@ export default function ReportsPage() {
             <div className="rounded-lg border bg-card overflow-hidden">
                 <table className="w-full caption-bottom text-sm">
                     <thead className="[&_tr]:border-b">
-                        <tr className="border-b transition-colors bg-primary text-primary-foreground hover:bg-primary/90">
+                        <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
                             <th className="h-12 px-4 text-left align-middle font-medium">Date</th>
                             <th className="h-12 px-4 text-left align-middle font-medium">Type</th>
                             <th className="h-12 px-4 text-left align-middle font-medium">Particulars</th>

@@ -117,7 +117,7 @@ export default function RolesPage() {
                 {canManage && (
                     <button
                         onClick={() => handleOpenModal()}
-                        className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                        className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                     >
                         <Plus className="h-4 w-4" />
                         Create Role
@@ -135,12 +135,12 @@ export default function RolesPage() {
                         <div key={role.id} className="rounded-lg border bg-card text-card-foreground shadow-sm">
                             <div className="flex flex-row items-center justify-between space-y-0 p-6 pb-2">
                                 <h3 className="font-semibold leading-none tracking-tight flex items-center gap-2">
-                                    <Shield className="h-4 w-4 text-blue-600" />
+                                    <Shield className="h-4 w-4 text-primary" />
                                     {role.name}
                                 </h3>
                                 {canManage && (
                                     <div className="flex gap-2">
-                                        <button onClick={() => handleOpenModal(role)} className="text-muted-foreground hover:text-foreground">
+                                        <button onClick={() => handleOpenModal(role)} className="text-muted-foreground hover:text-primary">
                                             <Pencil className="h-4 w-4" />
                                         </button>
                                         {role.name !== 'Super Admin' && ( // Prevent deleting Super Admin if desired
@@ -214,7 +214,7 @@ export default function RolesPage() {
                                                 <label key={perm.id} className="flex items-center space-x-2 rounded border p-2 hover:bg-muted cursor-pointer bg-white">
                                                     <div
                                                         className={`flex h-4 w-4 items-center justify-center rounded border ${selectedPermissions.has(perm.id)
-                                                            ? 'bg-primary border-primary bg-blue-600 border-blue-600 text-white'
+                                                            ? 'bg-primary border-primary text-primary-foreground'
                                                             : 'border-input'
                                                             }`}
                                                     >
@@ -248,7 +248,7 @@ export default function RolesPage() {
                                 <button
                                     type="submit"
                                     disabled={saving}
-                                    className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                                    className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                                 >
                                     {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                                     {editingRole ? 'Update Role' : 'Create Role'}

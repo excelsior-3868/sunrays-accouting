@@ -56,8 +56,8 @@ export default function LoginPage() {
             <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
                 <div className="w-full max-w-sm overflow-hidden rounded-lg border bg-background shadow-lg">
                     <div className="flex flex-col items-center gap-2 p-6 text-center">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-50">
-                            <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
+                        <div className="flex h-24 w-24 items-center justify-center -mb-2">
+                            <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
                         </div>
                         <h1 className="text-2xl font-bold tracking-tight">Reset Password</h1>
                         <p className="text-sm text-muted-foreground">
@@ -91,7 +91,7 @@ export default function LoginPage() {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="inline-flex h-9 w-full items-center justify-center whitespace-nowrap rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                                className="inline-flex h-9 w-full items-center justify-center whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
                             >
                                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Send Reset Link
@@ -117,10 +117,10 @@ export default function LoginPage() {
         <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
             <div className="w-full max-w-sm overflow-hidden rounded-lg border bg-background shadow-lg">
                 <div className="flex flex-col items-center gap-2 p-6 text-center">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-50">
-                        <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
+                    <div className="flex h-24 w-24 items-center justify-center -mb-2">
+                        <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
                     </div>
-                    <h1 className="text-2xl font-bold tracking-tight">Sunrays Accounting</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">School Lekha</h1>
                     <p className="text-sm text-muted-foreground">
                         Enter your credentials to access the system
                     </p>
@@ -176,7 +176,7 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="inline-flex h-9 w-full items-center justify-center whitespace-nowrap rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                            className="inline-flex h-9 w-full items-center justify-center whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
                         >
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Sign In

@@ -88,17 +88,28 @@ export default function ProfitLossReport() {
             <h1 className="text-2xl font-bold tracking-tight">Profit & Loss Statement</h1>
 
             {/* Top Level Summary */}
-            <div className="grid gap-4 md:grid-cols-2">
-                <Card className={netProfit >= 0 ? "border-l-4 border-l-green-500" : "border-l-4 border-l-red-500"}>
-                    <CardHeader >
-                        <CardTitle>Net Profit / (Loss)</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className={`text-4xl font-bold ${netProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
-                            {formatCurrency(netProfit)}
-                        </div>
-                    </CardContent>
-                </Card>
+            <div className="grid gap-4 md:grid-cols-3">
+                <StatCard
+                    title="Total Income"
+                    value={incomeItems.reduce((s, i) => s + i.amount, 0)}
+                    icon={<TrendingUp className="h-6 w-6" />}
+                    gradient="from-[#10B981] to-[#059669]"
+                    iconBg="bg-white/20"
+                />
+                <StatCard
+                    title="Total Expenses"
+                    value={expenseItems.reduce((s, i) => s + i.amount, 0)}
+                    icon={<TrendingDown className="h-6 w-6" />}
+                    gradient="from-[#FF5757] to-[#E63946]"
+                    iconBg="bg-white/20"
+                />
+                <StatCard
+                    title={netProfit >= 0 ? "Net Profit" : "Net Loss"}
+                    value={Math.abs(netProfit)}
+                    icon={netProfit >= 0 ? <TrendingUp className="h-6 w-6" /> : <TrendingDown className="h-6 w-6" />}
+                    gradient={netProfit >= 0 ? "from-[#5B7FED] to-[#4A6BD9]" : "from-[#FF5757] to-[#E63946]"}
+                    iconBg="bg-white/20"
+                />
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
@@ -153,6 +164,41 @@ export default function ProfitLossReport() {
                     </CardContent>
                 </Card>
             </div>
+        </div>
+    );
+}
+
+function StatCard({
+    title,
+    value,
+    icon,
+    gradient,
+    iconBg,
+    description
+}: {
+    title: string;
+    value: number;
+    icon: React.ReactNode;
+    gradient: string;
+    iconBg: string;
+    description?: string;
+}) {
+    return (
+        <div className={`relative overflow-hidden rounded-xl shadow-lg bg-gradient-to-br ${gradient} text-white transition-all duration-300 hover:shadow-xl hover:scale-105`}>
+            <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${iconBg}`}>
+                        {icon}
+                    </div>
+                </div>
+                <div className="space-y-1">
+                    <p className="text-sm font-medium text-white/90">{title}</p>
+                    <p className="text-3xl font-bold">NPR {value.toLocaleString()}</p>
+                    {description && <p className="text-xs text-white/80">{description}</p>}
+                </div>
+            </div>
+            {/* Decorative circle */}
+            <div className="absolute -right-6 -bottom-6 h-24 w-24 rounded-full bg-white/10"></div>
         </div>
     );
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Loader2, Search, X } from 'lucide-react';
+import { Plus, Loader2, Search, X, Filter } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { getInvoices, createInvoice, getFeeStructures, getFiscalYears, getStudents } from '@/lib/api';
 import { type Invoice, type FeeStructure, type FiscalYear, type Student } from '@/types';
@@ -40,6 +40,41 @@ export default function InvoicesPage() {
     const [classFilter, setClassFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [isListSearchOpen, setIsListSearchOpen] = useState(false);
+    const [listSelectedIndex, setListSelectedIndex] = useState(-1);
+
+    useEffect(() => {
+        setListSelectedIndex(-1);
+    }, [listSearch, isListSearchOpen]);
+
+    const handleListKeyDown = (e: React.KeyboardEvent) => {
+        if (!isListSearchOpen) {
+            if (e.key === 'ArrowDown' || e.key === 'Enter') {
+                setIsListSearchOpen(true);
+            }
+            return;
+        }
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                setListSelectedIndex(prev => prev < listFilteredStudents.length - 1 ? prev + 1 : prev);
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                setListSelectedIndex(prev => prev > 0 ? prev - 1 : 0);
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (listSelectedIndex >= 0 && listFilteredStudents[listSelectedIndex]) {
+                    setListSearch(listFilteredStudents[listSelectedIndex].name);
+                    setIsListSearchOpen(false);
+                }
+                break;
+            case 'Escape':
+                setIsListSearchOpen(false);
+                break;
+        }
+    };
 
     const listFilteredStudents = (allStudents || []).filter(student => {
         if (!student) return false;
@@ -261,67 +296,99 @@ export default function InvoicesPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">Invoices</h1>
+                {can('invoices.create') && (
+                    <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
+                        <Plus className="mr-2 h-4 w-4" /> Create Invoice
+                    </button>
+                )}
+            </div>
 
-                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto items-end">
-                    {/* Class Filter */}
-                    <select
-                        value={classFilter}
-                        onChange={(e) => setClassFilter(e.target.value)}
-                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    >
-                        <option value="">All Classes</option>
-                        {['PG', 'Nursery', 'LKG', 'UKG'].map(c => (
-                            <option key={c} value={c}>Class {c}</option>
-                        ))}
-                    </select>
+            {/* Filter Bar */}
+            <div className="flex flex-wrap items-center gap-4 bg-card p-4 rounded-lg border">
+                <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Filters:</span>
+                </div>
 
-                    {/* Month Filter */}
-                    <select
-                        value={monthFilter}
-                        onChange={(e) => setMonthFilter(e.target.value)}
-                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    >
-                        <option value="">All Months</option>
-                        {['Baisakh', 'Jestha', 'Asar', 'Shrawan', 'Bhadra', 'Ashwin', 'Kartik', 'Mangsir', 'Poush', 'Magh', 'Falgun', 'Chaitra'].map(m => (
-                            <option key={m} value={m}>{m}</option>
-                        ))}
-                    </select>
+                {/* Class Filter */}
+                <select
+                    value={classFilter}
+                    onChange={(e) => setClassFilter(e.target.value)}
+                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                    <option value="">All Classes</option>
+                    {['PG', 'Nursery', 'LKG', 'UKG'].map(c => (
+                        <option key={c} value={c}>Class {c}</option>
+                    ))}
+                </select>
 
-                    {/* Status Filter */}
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    >
-                        <option value="">All Status</option>
-                        <option value="Paid">Paid</option>
-                        <option value="Unpaid">Unpaid</option>
-                        <option value="Partial">Partial</option>
-                        <option value="Void">Void</option>
-                    </select>
+                {/* Month Filter */}
+                <select
+                    value={monthFilter}
+                    onChange={(e) => setMonthFilter(e.target.value)}
+                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                    <option value="">All Months</option>
+                    {['Baisakh', 'Jestha', 'Asar', 'Shrawan', 'Bhadra', 'Ashwin', 'Kartik', 'Mangsir', 'Poush', 'Magh', 'Falgun', 'Chaitra'].map(m => (
+                        <option key={m} value={m}>{m}</option>
+                    ))}
+                </select>
 
-                    <div className="relative w-full sm:w-[350px]">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <input
-                            type="search"
-                            placeholder="Search Student"
-                            value={listSearch}
-                            onChange={(e) => {
-                                setListSearch(e.target.value);
-                                setIsListSearchOpen(true);
-                            }}
-                            onFocus={() => setIsListSearchOpen(true)}
-                            onBlur={() => setTimeout(() => setIsListSearchOpen(false), 200)}
-                            className="flex h-10 w-full rounded-md border border-input bg-background pl-9 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-[350px]"
-                        />
-                        {isListSearchOpen && listSearch.length < 1 && listFilteredStudents.length > 0 && ( /* Show when empty on focus */
-                            <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground rounded-md border shadow-md animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
-                                {listFilteredStudents.map(student => (
+                {/* Status Filter */}
+                <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                    <option value="">All Status</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Unpaid">Unpaid</option>
+                    <option value="Partial">Partial</option>
+                    <option value="Void">Void</option>
+                </select>
+
+                <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <input
+                        type="search"
+                        placeholder="Search Student"
+                        value={listSearch}
+                        onChange={(e) => {
+                            setListSearch(e.target.value);
+                            setIsListSearchOpen(true);
+                        }}
+                        onFocus={() => setIsListSearchOpen(true)}
+                        onBlur={() => setTimeout(() => setIsListSearchOpen(false), 200)}
+                        onKeyDown={handleListKeyDown}
+                        className="flex h-9 w-full rounded-md border border-input bg-background pl-9 px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    />
+                    {isListSearchOpen && listSearch.length < 1 && listFilteredStudents.length > 0 && ( /* Show when empty on focus */
+                        <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground rounded-md border shadow-md animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
+                            {listFilteredStudents.map((student, index) => (
+                                <div
+                                    key={student.id}
+                                    className={`px-3 py-2 hover:bg-accent cursor-pointer text-sm ${index === listSelectedIndex ? 'bg-accent' : ''}`}
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        setListSearch(student.name);
+                                        setIsListSearchOpen(false);
+                                    }}
+                                >
+                                    <div className="font-medium">{student.name}</div>
+                                    <div className="text-xs text-muted-foreground">Class: {student.class}</div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    {isListSearchOpen && listSearch.length >= 1 && ( /* Show matches when typing */
+                        <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground rounded-md border shadow-md animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
+                            {listFilteredStudents.length > 0 ? (
+                                listFilteredStudents.map((student, index) => (
                                     <div
                                         key={student.id}
-                                        className="px-3 py-2 hover:bg-muted cursor-pointer text-sm"
+                                        className={`px-3 py-2 hover:bg-accent cursor-pointer text-sm ${index === listSelectedIndex ? 'bg-accent' : ''}`}
                                         onMouseDown={(e) => {
                                             e.preventDefault();
                                             setListSearch(student.name);
@@ -331,37 +398,11 @@ export default function InvoicesPage() {
                                         <div className="font-medium">{student.name}</div>
                                         <div className="text-xs text-muted-foreground">Class: {student.class}</div>
                                     </div>
-                                ))}
-                            </div>
-                        )}
-                        {isListSearchOpen && listSearch.length >= 1 && ( /* Show matches when typing */
-                            <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground rounded-md border shadow-md animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
-                                {listFilteredStudents.length > 0 ? (
-                                    listFilteredStudents.map(student => (
-                                        <div
-                                            key={student.id}
-                                            className="px-3 py-2 hover:bg-muted cursor-pointer text-sm"
-                                            onMouseDown={(e) => {
-                                                e.preventDefault();
-                                                setListSearch(student.name);
-                                                setIsListSearchOpen(false);
-                                            }}
-                                        >
-                                            <div className="font-medium">{student.name}</div>
-                                            <div className="text-xs text-muted-foreground">Class: {student.class}</div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="p-2 text-sm text-muted-foreground text-center">No students found</div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    {can('invoices.create') && (
-                        <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
-                            <Plus className="mr-2 h-4 w-4" /> Create Invoice
-                        </button>
+                                ))
+                            ) : (
+                                <div className="p-2 text-sm text-muted-foreground text-center">No students found</div>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>
@@ -372,7 +413,7 @@ export default function InvoicesPage() {
                 <div className="rounded-lg border bg-card overflow-hidden">
                     <table className="w-full caption-bottom text-sm">
                         <thead className="[&_tr]:border-b">
-                            <tr className="border-b transition-colors bg-primary text-primary-foreground hover:bg-primary/90">
+                            <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
                                 <th className="h-12 px-4 text-left align-middle font-medium">Invoice #</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium">Student</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium">Class</th>

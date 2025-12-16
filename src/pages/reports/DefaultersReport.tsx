@@ -176,12 +176,12 @@ export default function DefaultersReport() {
             <div className="rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
                 <table className="w-full caption-bottom text-sm">
                     <thead className="[&_tr]:border-b">
-                        <tr className="border-b transition-colors bg-muted/50 data-[state=selected]:bg-muted">
-                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Student ID</th>
-                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Name</th>
-                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Class</th>
-                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Pending Invoices</th>
-                            <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Total Due</th>
+                        <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
+                            <th className="h-12 px-4 text-left align-middle font-medium">Student ID</th>
+                            <th className="h-12 px-4 text-left align-middle font-medium">Name</th>
+                            <th className="h-12 px-4 text-left align-middle font-medium">Class</th>
+                            <th className="h-12 px-4 text-left align-middle font-medium">Pending Invoices</th>
+                            <th className="h-12 px-4 text-right align-middle font-medium">Total Due</th>
                         </tr>
                     </thead>
                     <tbody>

@@ -1,17 +1,33 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, ArrowLeft, CreditCard, Printer } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 import { getInvoiceById, recordPayment, getFiscalYears, getGLHeads, getStudentUnpaidStats } from '@/lib/api';
 import { type Invoice, type FiscalYear, type GLHead } from '@/types';
 import { usePermission } from '@/hooks/usePermission';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function InvoiceDetailsPage() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { can } = usePermission();
+    const { toast } = useToast();
     const [invoice, setInvoice] = useState<Invoice | null>(null);
     const [loading, setLoading] = useState(true);
     const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+
+    // Payment Confirmation State
+    const [confirmPaymentData, setConfirmPaymentData] = useState<any>(null);
+    const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
     // Live calculation of previous dues
     const [stats, setStats] = useState<{ amount: number, months: string }>({ amount: 0, months: '' });
@@ -63,12 +79,24 @@ export default function InvoiceDetailsPage() {
             remarks: formData.get('remarks') as string,
         };
 
+        // Open confirmation instead of immediate save
+        setConfirmPaymentData(payment);
+        setIsConfirmDialogOpen(true);
+    };
+
+    const confirmAndRecordPayment = async () => {
+        if (!confirmPaymentData) return;
+
         try {
-            await recordPayment(payment);
+            await recordPayment(confirmPaymentData);
+            setIsConfirmDialogOpen(false);
             setIsPaymentDialogOpen(false);
+            setConfirmPaymentData(null);
             fetchInvoice(); // Refresh to see updated status
+            toast({ title: "Success", description: "Payment recorded successfully" });
         } catch (error) {
             console.error('Error recording payment:', error);
+            toast({ variant: "destructive", title: "Error", description: "Failed to record payment" });
         }
     };
 
@@ -125,7 +153,7 @@ export default function InvoiceDetailsPage() {
                     <h3 className="font-semibold mb-4 flex justify-between items-center">
                         <div>Summary</div>
                         {invoice.status !== 'Paid' && can('invoices.create') && (
-                            <button onClick={() => setIsPaymentDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-green-600 text-white hover:bg-green-700 h-8 px-3">
+                            <button onClick={() => setIsPaymentDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3">
                                 <CreditCard className="mr-2 h-3.5 w-3.5" /> Record Payment
                             </button>
                         )}
@@ -153,7 +181,7 @@ export default function InvoiceDetailsPage() {
                 <div className="p-4 font-semibold border-b">Lines</div>
                 <table className="w-full caption-bottom text-sm">
                     <thead>
-                        <tr className="border-b transition-colors bg-primary text-primary-foreground hover:bg-primary/90">
+                        <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
                             <th className="h-10 px-4 text-left align-middle font-medium">GL Head</th>
                             <th className="h-10 px-4 text-left align-middle font-medium">Description</th>
                             <th className="h-10 px-4 text-right align-middle font-medium">Amount</th>
@@ -207,12 +235,47 @@ export default function InvoiceDetailsPage() {
                             </div>
                             <div className="flex justify-end gap-2 mt-6">
                                 <button type="button" onClick={() => setIsPaymentDialogOpen(false)} className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground">Cancel</button>
-                                <button type="submit" className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md bg-green-600 text-white hover:bg-green-700">Receive Payment</button>
+                                <button type="submit" className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90">Receive Payment</button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
+            {/* Confirmation Dialog */}
+            <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Confirm Payment</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to record a payment of <span className="font-bold text-foreground">NPR {confirmPaymentData?.amount}</span> for <span className="font-bold text-foreground">{invoice.student_name}</span>?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="text-sm space-y-2">
+                        <div className="flex justify-between border-b pb-1">
+                            <span className="text-muted-foreground">Invoice No:</span>
+                            <span>{invoice.invoice_number}</span>
+                        </div>
+                        <div className="flex justify-between border-b pb-1">
+                            <span className="text-muted-foreground">Date:</span>
+                            <span>{confirmPaymentData?.payment_date}</span>
+                        </div>
+                        <div className="flex justify-between border-b pb-1">
+                            <span className="text-muted-foreground">Mode:</span>
+                            <span>{paymentModes.find(m => m.id === confirmPaymentData?.payment_mode_gl_id)?.name}</span>
+                        </div>
+                        {confirmPaymentData?.remarks && (
+                            <div className="flex flex-col gap-1 pt-1">
+                                <span className="text-muted-foreground">Remarks:</span>
+                                <span>{confirmPaymentData.remarks}</span>
+                            </div>
+                        )}
+                    </div>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmAndRecordPayment} className="bg-primary text-primary-foreground hover:bg-primary/90">Confirm Payment</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

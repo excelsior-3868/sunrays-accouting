@@ -18,6 +18,7 @@ interface SearchableSelectProps {
 export default function SearchableSelect({ options, value, onChange, placeholder = "Select...", className = "" }: SearchableSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedIndex, setSelectedIndex] = useState(-1);
     const wrapperRef = useRef<HTMLDivElement>(null);
 
     // Find selected option to display its label
@@ -28,7 +29,6 @@ export default function SearchableSelect({ options, value, onChange, placeholder
         function handleClickOutside(event: MouseEvent) {
             if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
                 setIsOpen(false);
-                // Reset search term on close so next time it's clean or shows selected
                 setSearchTerm('');
             }
         }
@@ -40,6 +40,43 @@ export default function SearchableSelect({ options, value, onChange, placeholder
     const filteredOptions = options.filter(opt =>
         opt.label.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    useEffect(() => {
+        setSelectedIndex(-1);
+    }, [searchTerm, isOpen]);
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (!isOpen) {
+            if (e.key === 'ArrowDown' || e.key === 'Enter') {
+                setIsOpen(true);
+            }
+            return;
+        }
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                setSelectedIndex(prev => prev < filteredOptions.length - 1 ? prev + 1 : prev);
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                setSelectedIndex(prev => prev > 0 ? prev - 1 : 0);
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (selectedIndex >= 0 && filteredOptions[selectedIndex]) {
+                    onChange(filteredOptions[selectedIndex].value);
+                    setIsOpen(false);
+                    setSearchTerm('');
+                } else if (filteredOptions.length > 0 && selectedIndex === -1) {
+                    // Should we select first one? or do nothing? User might expect nothing.
+                }
+                break;
+            case 'Escape':
+                setIsOpen(false);
+                break;
+        }
+    };
 
     // Grouping logic for display
     const groupedOptions = filteredOptions.reduce((acc, opt) => {
@@ -78,6 +115,7 @@ export default function SearchableSelect({ options, value, onChange, placeholder
                         setIsOpen(true);
                         setSearchTerm('');
                     }}
+                    onKeyDown={handleKeyDown}
                 />
                 <div className="absolute right-3 text-muted-foreground pointer-events-none">
                     <ChevronDown size={14} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
@@ -99,7 +137,8 @@ export default function SearchableSelect({ options, value, onChange, placeholder
                                         {groupOptions.map(option => (
                                             <div
                                                 key={option.value}
-                                                className={`relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 ${value === option.value ? 'bg-accent text-accent-foreground' : ''}`}
+                                                className={`relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 ${value === option.value ? 'bg-accent text-accent-foreground' : ''
+                                                    } ${filteredOptions.indexOf(option) === selectedIndex ? 'bg-accent' : ''}`}
                                                 onClick={() => {
                                                     onChange(option.value);
                                                     setIsOpen(false);
@@ -118,7 +157,8 @@ export default function SearchableSelect({ options, value, onChange, placeholder
                                 filteredOptions.map(option => (
                                     <div
                                         key={option.value}
-                                        className={`relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 ${value === option.value ? 'bg-accent text-accent-foreground' : ''}`}
+                                        className={`relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 ${value === option.value ? 'bg-accent text-accent-foreground' : ''
+                                            } ${filteredOptions.indexOf(option) === selectedIndex ? 'bg-accent' : ''}`}
                                         onClick={() => {
                                             onChange(option.value);
                                             setIsOpen(false);
