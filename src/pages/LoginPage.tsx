@@ -151,6 +151,7 @@ export default function LoginPage() {
                                     type="button"
                                     onClick={() => setIsForgotPassword(true)}
                                     className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                                    tabIndex={-1}
                                 >
                                     Forgot Password?
                                 </button>
