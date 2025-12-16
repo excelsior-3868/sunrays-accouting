@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Plus, ChevronRight, ChevronDown, Folder, FileText, Pencil, Trash2 } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 import { getGLHeads, createGLHead, deleteGLHead } from '@/lib/api';
 import { type GLHead, type GLHeadType } from '@/types';
 import { cn } from '@/lib/utils'; // Assuming you have this utility
 
 export default function ChartOfAccountsPage() {
     const [glHeads, setGlHeads] = useState<GLHead[]>([]);
+    const { toast } = useToast();
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
@@ -45,17 +47,17 @@ export default function ChartOfAccountsPage() {
         try {
             if (editingHead) {
                 await import('@/lib/api').then(m => m.updateGLHead(editingHead.id, headData));
-                alert('GL Head updated successfully');
+                toast({ title: "Success", description: "GL Head updated successfully" });
             } else {
                 await createGLHead(headData);
-                alert('GL Head created successfully');
+                toast({ title: "Success", description: "GL Head created successfully" });
             }
             setIsDialogOpen(false);
             setEditingHead(null);
             fetchHeads();
         } catch (error) {
             console.error('Error saving GL head:', error);
-            alert('Failed to save GL head.');
+            toast({ variant: "destructive", title: "Error", description: "Failed to save GL head." });
         }
     };
 

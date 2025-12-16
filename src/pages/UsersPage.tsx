@@ -2,12 +2,24 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getRoles } from '@/lib/api';
 import { Search, Loader2, UserPlus, Eye, EyeOff, Pencil, Trash2 } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 import { type Role } from '@/types';
 import { usePermission } from '@/hooks/usePermission';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function UsersPage() {
     const { can } = usePermission();
     const canManage = can('users.manage');
+    const { toast } = useToast();
 
     const [users, setUsers] = useState<any[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
@@ -17,6 +29,7 @@ export default function UsersPage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<any>(null);
+    const [userToDelete, setUserToDelete] = useState<any>(null);
 
     // Create form state
     const [newUserName, setNewUserName] = useState('');
@@ -43,30 +56,48 @@ export default function UsersPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [usersData, rolesData] = await Promise.all([
-                fetchUsersData(),
-                canManage ? getRoles() : Promise.resolve([])
-            ]);
-            setUsers(usersData || []);
-            setRoles(rolesData || []);
-            // Set default role for new user to 'User' or first one
-            if (rolesData.length > 0) {
-                const defaultRole = rolesData.find((r: Role) => r.name === 'User') || rolesData[0];
-                if (defaultRole) setNewUserRoleId(defaultRole.id);
+            // Fetch Users
+            try {
+                const usersData = await fetchUsersData();
+                setUsers(usersData || []);
+            } catch (err: any) {
+                console.error("Error fetching users:", err);
+                toast({ variant: "destructive", title: "Error", description: "Failed to load users: " + err.message });
             }
-        } catch (error) {
-            console.error('Error fetching data:', error);
+
+            // Fetch Roles (independently)
+            try {
+                const rolesData = await getRoles();
+                setRoles(rolesData || []);
+
+                // Set default role for new user to 'User' or first one
+                if (rolesData && rolesData.length > 0) {
+                    const defaultRole = rolesData.find((r: Role) => r.name === 'User') || rolesData[0];
+                    if (defaultRole) setNewUserRoleId(defaultRole.id);
+                } else {
+                    console.warn("Roles fetched but returned empty array.");
+                }
+            } catch (err: any) {
+                console.error("Error fetching roles:", err);
+                // Temporarily alert to help debug
+                // alert("Failed to load roles (Likely RLS issue): " + err.message);
+            }
+
+        } catch (error: any) {
+            // Catch any other unforeseen errors
+            console.error('General error fetching data:', error);
         } finally {
             setLoading(false);
         }
     };
+
 
     const fetchUsersData = async () => {
         const { data, error } = await supabase
             .from('users')
             .select(`
                 *,
-                role:roles(id, name)
+                role:roles!role(id, name)
             `)
             .order('created_at', { ascending: false });
 
@@ -81,19 +112,19 @@ export default function UsersPage() {
         setCreateLoading(true);
         try {
             if (newUserPassword !== newUserConfirmPassword) {
-                alert("Passwords do not match");
+                toast({ variant: "destructive", title: "Error", description: "Passwords do not match" });
                 setCreateLoading(false);
                 return;
             }
 
             if (!newUserPassword) {
-                alert("Password is required for initial creation.");
+                toast({ variant: "destructive", title: "Error", description: "Password is required for initial creation." });
                 setCreateLoading(false);
                 return;
             }
 
             if (!newUserRoleId) {
-                alert("Please select a role.");
+                toast({ variant: "destructive", title: "Error", description: "Please select a role." });
                 setCreateLoading(false);
                 return;
             }
@@ -124,12 +155,12 @@ export default function UsersPage() {
                 }
 
                 setIsCreateModalOpen(false);
-                alert('User created successfully! Please check email for confirmation if enabled.');
+                toast({ title: "Success", description: "User created successfully! Please check email for confirmation if enabled." });
                 const updatedUsers = await fetchUsersData();
                 setUsers(updatedUsers || []);
             }
         } catch (error: any) {
-            alert('Error creating user: ' + error.message);
+            toast({ variant: "destructive", title: "Error", description: "Error creating user: " + error.message });
         } finally {
             setCreateLoading(false);
         }
@@ -146,6 +177,12 @@ export default function UsersPage() {
     const handleUpdateUser = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingUser || !canManage) return;
+
+        if (!editRoleId) {
+            toast({ variant: "destructive", title: "Error", description: "Please select a valid role." });
+            return;
+        }
+
         setUpdateLoading(true);
 
         try {
@@ -163,31 +200,38 @@ export default function UsersPage() {
             setEditingUser(null);
             const updatedUsers = await fetchUsersData();
             setUsers(updatedUsers || []);
-            alert('User updated successfully.');
+            toast({ title: "Success", description: "User updated successfully." });
         } catch (error: any) {
             console.error('Error updating user:', error);
-            alert('Error updating user: ' + error.message);
+            toast({ variant: "destructive", title: "Error", description: "Error updating user: " + error.message });
         } finally {
             setUpdateLoading(false);
         }
     };
 
-    const handleDelete = async (user: any) => {
+    const handleDeleteClick = (user: any) => {
         if (!canManage) return;
-        if (!confirm(`Are you sure you want to delete user "${user.full_name || user.email}"? This will only remove their profile from this list. They may still exist in the Authentication system.`)) return;
+        setUserToDelete(user);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!userToDelete) return;
 
         try {
             const { error } = await supabase
                 .from('users')
                 .delete()
-                .eq('id', user.id);
+                .eq('id', userToDelete.id);
 
             if (error) throw error;
             const updatedUsers = await fetchUsersData();
             setUsers(updatedUsers || []);
+            toast({ title: "Success", description: "User deleted successfully" });
         } catch (error: any) {
             console.error("Error deleting user:", error);
-            alert("Failed to delete user: " + error.message);
+            toast({ variant: "destructive", title: "Error", description: "Failed to delete user: " + error.message });
+        } finally {
+            setUserToDelete(null);
         }
     };
 
@@ -198,9 +242,7 @@ export default function UsersPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-end gap-2 text-xs text-red-500 font-mono bg-red-50 p-2 rounded">
-                DEBUG: CanManage={canManage ? 'true' : 'false'}, Roles={roles.length}, Loading={loading ? 'true' : 'false'}
-            </div>
+
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-2xl font-bold tracking-tight">Users</h2>
@@ -304,7 +346,7 @@ export default function UsersPage() {
                                                         <Pencil className="h-4 w-4" />
                                                     </button>
                                                     <button
-                                                        onClick={() => handleDelete(user)}
+                                                        onClick={() => handleDeleteClick(user)}
                                                         className="inline-flex items-center justify-center rounded-md bg-red-50 p-2 text-red-600 transition-colors hover:bg-red-100"
                                                         title="Delete User"
                                                     >
@@ -475,6 +517,24 @@ export default function UsersPage() {
                     </div>
                 </div>
             )}
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the user profile for <strong>{userToDelete?.full_name || userToDelete?.email}</strong>.
+                            They may still exist in the Authentication system but will lose access to this application.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700">
+                            Delete User
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

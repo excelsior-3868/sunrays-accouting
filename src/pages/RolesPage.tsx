@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { getRoles, getPermissions, createRole, updateRole, deleteRole } from '@/lib/api';
 import { Loader2, Plus, Pencil, Trash2, Shield, Check } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 import { type Role, type Permission } from '@/types';
 import { usePermission } from '@/hooks/usePermission';
 
 export default function RolesPage() {
     const { can } = usePermission();
     const canManage = can('roles.manage');
+    const { toast } = useToast();
 
     const [roles, setRoles] = useState<Role[]>([]);
     const [permissions, setPermissions] = useState<Permission[]>([]);
@@ -61,15 +63,15 @@ export default function RolesPage() {
             const permIds = Array.from(selectedPermissions);
             if (editingRole) {
                 await updateRole(editingRole.id, formData, permIds);
-                alert('Role updated successfully');
+                toast({ title: "Success", description: "Role updated successfully" });
             } else {
                 await createRole(formData, permIds);
-                alert('Role created successfully');
+                toast({ title: "Success", description: "Role created successfully" });
             }
             setIsModalOpen(false);
             fetchData();
         } catch (error: any) {
-            alert('Error saving role: ' + error.message);
+            toast({ variant: "destructive", title: "Error", description: "Error saving role: " + error.message });
         } finally {
             setSaving(false);
         }
@@ -81,8 +83,9 @@ export default function RolesPage() {
         try {
             await deleteRole(id);
             fetchData();
+            toast({ title: "Success", description: "Role deleted successfully" });
         } catch (error: any) {
-            alert('Error deleting role: ' + error.message);
+            toast({ variant: "destructive", title: "Error", description: "Error deleting role: " + error.message });
         }
     };
 

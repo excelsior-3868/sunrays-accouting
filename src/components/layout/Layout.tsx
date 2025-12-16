@@ -22,16 +22,30 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import ChangePasswordModal from '@/components/ChangePasswordModal';
+import { usePermission } from '@/hooks/usePermission';
 
 export default function Layout() {
-    const [isSettingsOpen, setIsSettingsOpen] = useState(true);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [isReportsOpen, setIsReportsOpen] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
     const { user } = useAuth();
+    const { can, role } = usePermission();
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
     };
+
+    // Derived permissions
+    const canViewInvoices = can('invoices.view');
+    const canViewExpenses = can('expenses.view');
+    const canViewPayroll = can('payroll.view');
+    const canViewUsers = can('users.view');
+    const canViewRoles = can('roles.view');
+    // Settings usually require high-level management permissions.
+    // We'll use a combination of specific management permissions or Admin role check as a proxy.
+    const canViewSettings = role === 'Super Admin' || role === 'Admin' || can('roles.manage');
+
 
     return (
         <div className="flex h-screen bg-muted/40">
@@ -49,38 +63,75 @@ export default function Layout() {
 
                         <div className="my-2 border-t border-border" />
 
-                        <NavItem to="/reports" icon={<BarChart3 className="h-4 w-4 text-purple-600" />} label="Reports" />
+                        {/* Reports Menu */}
+                        <div className="space-y-1">
+                            <button
+                                onClick={() => setIsReportsOpen(!isReportsOpen)}
+                                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-blue-600 w-full text-left font-medium hover:bg-blue-50"
+                            >
+                                <BarChart3 className="h-4 w-4 text-purple-600" />
+                                <span className="flex-1">Reports</span>
+                                {isReportsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            </button>
+
+                            {isReportsOpen && (
+                                <div className="space-y-1 pl-4">
+                                    <NavItem to="/reports/daybook" icon={<BookOpen className="h-4 w-4 text-gray-500" />} label="Day Book" />
+                                    <NavItem to="/reports/defaulters" icon={<Users className="h-4 w-4 text-red-500" />} label="Defaulters" />
+                                    <NavItem to="/reports/student-ledger" icon={<Receipt className="h-4 w-4 text-blue-500" />} label="Student Ledger" />
+                                    <NavItem to="/reports/staff-ledger" icon={<Receipt className="h-4 w-4 text-cyan-500" />} label="Staff Ledger" />
+                                    <NavItem to="/reports/profit-loss" icon={<TrendingDown className="h-4 w-4 text-green-500" />} label="Profit & Loss" />
+                                    <NavItem to="/reports/cash-flow" icon={<Wallet className="h-4 w-4 text-orange-500" />} label="Cash Flow" />
+                                    <NavItem to="/reports/salary-sheet" icon={<DollarSign className="h-4 w-4 text-purple-500" />} label="Salary Sheet" />
+                                </div>
+                            )}
+                        </div>
 
                         <div className="my-2 border-t border-border" />
-                        <NavItem to="/invoices" icon={<Receipt className="h-4 w-4 text-green-600" />} label="Invoices" />
-                        <NavItem to="/expenses" icon={<TrendingDown className="h-4 w-4 text-red-600" />} label="Expenses" />
-                        <NavItem to="/payroll" icon={<Wallet className="h-4 w-4 text-orange-600" />} label="Payroll" />
+
+                        {canViewInvoices && (
+                            <NavItem to="/invoices" icon={<Receipt className="h-4 w-4 text-green-600" />} label="Invoices" />
+                        )}
+                        {canViewExpenses && (
+                            <NavItem to="/expenses" icon={<TrendingDown className="h-4 w-4 text-red-600" />} label="Expenses" />
+                        )}
+                        {canViewPayroll && (
+                            <NavItem to="/payroll" icon={<Wallet className="h-4 w-4 text-orange-600" />} label="Payroll" />
+                        )}
 
                         <div className="my-2 border-t border-border" />
 
-                        <NavItem to="/users" icon={<Users className="h-4 w-4 text-cyan-600" />} label="Users" />
-                        <NavItem to="/roles" icon={<Key className="h-4 w-4 text-emerald-600" />} label="Roles" />
+                        {canViewUsers && (
+                            <NavItem to="/users" icon={<Users className="h-4 w-4 text-cyan-600" />} label="Users" />
+                        )}
+                        {canViewRoles && (
+                            <NavItem to="/roles" icon={<Key className="h-4 w-4 text-emerald-600" />} label="Roles" />
+                        )}
 
                         <div className="my-2 border-t border-border" />
 
                         {/* Collapsible Settings Menu */}
-                        <button
-                            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                            className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-blue-600 w-full text-left font-medium hover:bg-blue-50"
-                        >
-                            <Settings className="h-4 w-4 text-gray-600" />
-                            <span className="flex-1">Settings</span>
-                            {isSettingsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                        </button>
+                        {canViewSettings && (
+                            <>
+                                <button
+                                    onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-blue-600 w-full text-left font-medium hover:bg-blue-50"
+                                >
+                                    <Settings className="h-4 w-4 text-gray-600" />
+                                    <span className="flex-1">Settings</span>
+                                    {isSettingsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                </button>
 
-                        {isSettingsOpen && (
-                            <div className="space-y-1 pl-4"> {/* Indented sub-menu */}
-                                <NavItem to="/settings" icon={<Calendar className="h-4 w-4 text-indigo-600" />} label="Fiscal Years" />
-                                <NavItem to="/chart-of-accounts" icon={<BookOpen className="h-4 w-4 text-teal-600" />} label="Chart of Accounts" />
-                                <NavItem to="/fee-structures" icon={<GraduationCap className="h-4 w-4 text-pink-600" />} label="Fee Structures" />
-                                <NavItem to="/salary-structures" icon={<DollarSign className="h-4 w-4 text-amber-600" />} label="Salary Structures" />
-                                <NavItem to="/settings/staffs" icon={<Users className="h-4 w-4 text-cyan-600" />} label="Staffs" />
-                            </div>
+                                {isSettingsOpen && (
+                                    <div className="space-y-1 pl-4"> {/* Indented sub-menu */}
+                                        <NavItem to="/settings" icon={<Calendar className="h-4 w-4 text-indigo-600" />} label="Fiscal Years" end />
+                                        <NavItem to="/chart-of-accounts" icon={<BookOpen className="h-4 w-4 text-teal-600" />} label="Chart of Accounts" />
+                                        <NavItem to="/fee-structures" icon={<GraduationCap className="h-4 w-4 text-pink-600" />} label="Fee Structures" />
+                                        <NavItem to="/salary-structures" icon={<DollarSign className="h-4 w-4 text-amber-600" />} label="Salary Structures" />
+                                        <NavItem to="/settings/staffs" icon={<Users className="h-4 w-4 text-cyan-600" />} label="Staffs" />
+                                    </div>
+                                )}
+                            </>
                         )}
                     </nav>
                 </div>
@@ -88,19 +139,17 @@ export default function Layout() {
                 {/* User Profile Section */}
                 <div className="border-t p-4">
                     <div
-                        className="flex cursor-pointer items-center gap-3 rounded-xl border bg-card p-3 shadow-sm transition-colors hover:bg-accent"
+                        className="flex cursor-pointer items-center gap-3 rounded-xl bg-[#FF5252] p-3 shadow-sm transition-colors hover:bg-[#FF5252]/90"
                         onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white font-bold">
-                            {user?.email?.charAt(0).toUpperCase() || 'A'}
-                        </div>
+
                         <div className="flex-1 overflow-hidden">
-                            <p className="truncate text-sm font-semibold">Administrator</p>
-                            <p className="truncate text-xs text-muted-foreground" title={user?.email}>
+                            <p className="truncate text-sm font-semibold text-white">Welcome, {user?.user_metadata?.full_name?.split(' ')[0] || 'User'}</p>
+                            <p className="truncate text-xs text-white/90" title={user?.email}>
                                 {user?.email}
                             </p>
                         </div>
-                        {isUserMenuOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                        {isUserMenuOpen ? <ChevronUp className="h-4 w-4 text-white/90" /> : <ChevronDown className="h-4 w-4 text-white/90" />}
                     </div>
 
                     {isUserMenuOpen && (
@@ -145,10 +194,11 @@ export default function Layout() {
     );
 }
 
-function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
+function NavItem({ to, icon, label, end }: { to: string; icon: React.ReactNode; label: string; end?: boolean }) {
     return (
         <NavLink
             to={to}
+            end={end}
             className={({ isActive }) =>
                 cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2 transition-all",

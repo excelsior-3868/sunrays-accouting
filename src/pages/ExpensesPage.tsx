@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 import { getExpenses, createExpense, getGLHeads, getFiscalYears } from '@/lib/api';
 import { type Expense, type GLHead, type FiscalYear } from '@/types';
 import SearchableSelect from '@/components/SearchableSelect';
+import { usePermission } from '@/hooks/usePermission';
 
 export default function ExpensesPage() {
+    const { can } = usePermission();
+    const { toast } = useToast();
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -50,6 +54,7 @@ export default function ExpensesPage() {
 
     const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        if (!can('expenses.manage')) return;
 
         try {
             await createExpense({
@@ -64,8 +69,10 @@ export default function ExpensesPage() {
             // Reset form
             setNewExpenseState(prev => ({ ...prev, amount: '', description: '' }));
             fetchData();
+            toast({ title: "Success", description: "Expense recorded successfully" });
         } catch (error) {
             console.error('Error creating expense:', error);
+            toast({ variant: "destructive", title: "Error", description: "Failed to create expense" });
         }
     };
 
@@ -119,9 +126,11 @@ export default function ExpensesPage() {
                         />
                     </div>
 
-                    <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
-                        <Plus className="mr-2 h-4 w-4" /> Add Expense
-                    </button>
+                    {can('expenses.manage') && (
+                        <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
+                            <Plus className="mr-2 h-4 w-4" /> Add Expense
+                        </button>
+                    )}
                 </div>
             </div>
 

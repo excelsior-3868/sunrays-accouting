@@ -1,42 +1,61 @@
-import React, { useEffect, useState } from 'react';
-import { Pencil, Plus, Trash, Loader2 } from 'lucide-react';
-import { getSalaryStructures, createSalaryStructure, updateSalaryStructure, deleteSalaryStructure, getGLHeads, getFiscalYears, getTeachers, getStaffMembers } from '@/lib/api';
-import { type SalaryStructure, type GLHead, type FiscalYear, type SalaryComponentType, type Teacher, type Staff } from '@/types';
+
+import { useEffect, useState } from 'react';
+import { Plus, Pencil, Trash2, X, PlusCircle, User } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
+import {
+    getSalaryStructures, createSalaryStructure, updateSalaryStructure, deleteSalaryStructure,
+    getFiscalYears, getGLHeads, getStaffMembers, getTeachers
+} from '@/lib/api';
+import { type SalaryStructure, type FiscalYear, type GLHead, type SalaryStructureItem } from '@/types';
+import { Loader2 } from 'lucide-react';
 
 export default function SalaryStructuresPage() {
+    const { toast } = useToast();
     const [structures, setStructures] = useState<SalaryStructure[]>([]);
-    const [glHeads, setGlHeads] = useState<GLHead[]>([]);
-    const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([]);
-
-    // Employee Data
-    const [teachers, setTeachers] = useState<Teacher[]>([]);
-    const [staffMembers, setStaffMembers] = useState<Staff[]>([]);
-
     const [loading, setLoading] = useState(true);
+    const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([]);
+    const [glHeads, setGlHeads] = useState<GLHead[]>([]);
+    const [employees, setEmployees] = useState<{ id: string, name: string, role: string }[]>([]);
+
+    // Dialog State
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
 
     // Form State
-    const [formRows, setFormRows] = useState<{ gl_head_id: string; amount: number; type: SalaryComponentType }[]>([{ gl_head_id: '', amount: 0, type: 'Earning' }]);
-    const [employeeType, setEmployeeType] = useState<'Teacher' | 'Staff'>('Teacher');
-    const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
+    const [formData, setFormData] = useState({
+        employee_id: '',
+        fiscal_year_id: '',
+        items: [] as Omit<SalaryStructureItem, 'id' | 'structure_id' | 'created_at'>[],
+    });
 
     const fetchData = async () => {
+        setLoading(true);
         try {
-            const [stData, glData, fyData, tData, sData] = await Promise.all([
+            const [structs, fys, heads, staff, teachers] = await Promise.all([
                 getSalaryStructures(),
-                getGLHeads(),
                 getFiscalYears(),
-                getTeachers(),
-                getStaffMembers()
+                getGLHeads(),
+                getStaffMembers(),
+                getTeachers()
             ]);
-            setStructures(stData);
-            setGlHeads(glData);
-            setFiscalYears(fyData.filter(fy => !fy.is_active || true)); // Show all for now, filter in UI if needed
-            setTeachers(tData);
-            setStaffMembers(sData);
+            setStructures(structs);
+            setFiscalYears(fys);
+
+            // Filter heads: Expense for Earnings, Liability (or specific payables) for Deductions? 
+            // Usually Earnings are Expenses for the company. Deductions are Liabilities (Tax Payable) or just negative.
+            // For simplicity, let's load all or just Expense/Liability.
+            setGlHeads(heads);
+
+            // Combine employees
+            const allEmployees = [
+                ...staff.map(s => ({ id: s.id, name: `${s.first_name} ${s.last_name}`, role: 'Staff' })),
+                ...teachers.map(t => ({ id: t.id, name: `${t.first_name} ${t.last_name}`, role: 'Teacher' }))
+            ];
+            setEmployees(allEmployees);
+
         } catch (error) {
-            console.error('Error fetching data:', error);
+            console.error(error);
+            toast({ variant: "destructive", title: "Error", description: "Failed to load data" });
         } finally {
             setLoading(false);
         }
@@ -46,348 +65,255 @@ export default function SalaryStructuresPage() {
         fetchData();
     }, []);
 
-    const handleEdit = (st: SalaryStructure) => {
-        setEditingId(st.id);
-        const isTeacher = teachers.some(t => t.id === st.employee_id);
-        setEmployeeType(isTeacher ? 'Teacher' : 'Staff');
-        setSelectedEmployeeId(st.employee_id);
+    const handleOpenCreate = () => {
+        setEditingId(null);
+        setFormData({
+            employee_id: '',
+            fiscal_year_id: fiscalYears.find(fy => fy.is_active)?.id || '',
+            items: []
+        });
+        setIsDialogOpen(true);
+    };
 
-        // Map items to formRows
-        if (st.items) {
-            setFormRows(st.items.map(i => ({
+    const handleEdit = (structure: SalaryStructure) => {
+        setEditingId(structure.id);
+        setFormData({
+            employee_id: structure.employee_id,
+            fiscal_year_id: structure.fiscal_year_id,
+            items: structure.items?.map(i => ({
                 gl_head_id: i.gl_head_id,
                 amount: i.amount,
                 type: i.type
-            })));
-        }
-
+            })) || []
+        });
         setIsDialogOpen(true);
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this salary structure?')) return;
+        if (!confirm('Are you sure you want to delete this Salary Structure?')) return;
         try {
             await deleteSalaryStructure(id);
+            toast({ title: "Success", description: "Salary Structure deleted" });
             fetchData();
-        } catch (e) {
-            console.error('Error deleting:', e);
+        } catch (error) {
+            console.error(error);
+            toast({ variant: "destructive", title: "Error", description: "Failed to delete" });
         }
-    }
+    };
 
-    const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        const formData = new FormData(e.currentTarget);
 
-        let empName = '';
-        let empId = selectedEmployeeId;
+        const employeeName = employees.find(e => e.id === formData.employee_id)?.name || 'Unknown';
 
-        if (employeeType === 'Teacher') {
-            const t = teachers.find(t => t.id === empId);
-            empName = t ? `${t.first_name} ${t.last_name}` : '';
-        } else {
-            const s = staffMembers.find(s => s.id === empId);
-            empName = s ? `${s.first_name} ${s.last_name}` : '';
-        }
-
-        const structure = {
-            employee_id: empId,
-            employee_name: empName, // We store the name string for historical/display simplicity
-            fiscal_year_id: formData.get('fiscal_year_id') as string,
+        const payload = {
+            employee_id: formData.employee_id,
+            employee_name: employeeName,
+            fiscal_year_id: formData.fiscal_year_id,
+            items: formData.items
         };
-
-        const items = formRows.map(row => ({
-            gl_head_id: row.gl_head_id,
-            amount: row.amount,
-            type: row.type
-        }));
 
         try {
             if (editingId) {
-                await updateSalaryStructure(editingId, structure, items);
+                // Remove items from payload for the 'structure' argument, pass distinct items array as third argument
+                const { items: itemsList, ...structureData } = payload;
+                await updateSalaryStructure(editingId, structureData, itemsList);
+                toast({ title: "Success", description: "Updated successfully" });
             } else {
-                await createSalaryStructure(structure, items);
+                // Split payload into structure and items
+                const { items: itemsList, ...structureData } = payload;
+                await createSalaryStructure(structureData, itemsList);
+                toast({ title: "Success", description: "Created successfully" });
             }
             setIsDialogOpen(false);
-            setFormRows([{ gl_head_id: '', amount: 0, type: 'Earning' }]); // Reset
-            setSelectedEmployeeId('');
-            setEditingId(null);
             fetchData();
         } catch (error) {
-            console.error('Error creating salary structure:', error);
+            console.error(error);
+            toast({ variant: "destructive", title: "Error", description: "Failed to save" });
         }
     };
 
-    const addRow = () => {
-        setFormRows([...formRows, { gl_head_id: '', amount: 0, type: 'Earning' }]);
+    // Form Field Helpers
+    const updateItem = (index: number, field: keyof typeof formData.items[0], value: any) => {
+        const newItems = [...formData.items];
+        newItems[index] = { ...newItems[index], [field]: value };
+        setFormData({ ...formData, items: newItems });
     };
 
-    const removeRow = (index: number) => {
-        const newRows = [...formRows];
-        newRows.splice(index, 1);
-        setFormRows(newRows);
+    const addItem = () => {
+        setFormData({
+            ...formData,
+            items: [...formData.items, { gl_head_id: glHeads[0]?.id || '', amount: 0, type: 'Earning' }]
+        });
     };
 
-    const updateRow = (index: number, field: 'gl_head_id' | 'amount' | 'type', value: any) => {
-        const newRows = [...formRows];
-        // @ts-ignore
-        newRows[index][field] = value;
-        setFormRows(newRows);
+    const removeItem = (index: number) => {
+        const newItems = formData.items.filter((_, i) => i !== index);
+        setFormData({ ...formData, items: newItems });
     };
+
+    const calculateNet = (items: typeof formData.items) => {
+        return items.reduce((acc, item) => {
+            if (item.type === 'Earning') return acc + (Number(item.amount) || 0);
+            if (item.type === 'Deduction') return acc - (Number(item.amount) || 0);
+            return acc;
+        }, 0);
+    };
+
+    if (loading) return <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">Salary Structures</h1>
                 <button
-                    onClick={() => {
-                        setIsDialogOpen(true);
-                        setEditingId(null);
-                        setSelectedEmployeeId('');
-                        setFormRows([{ gl_head_id: '', amount: 0, type: 'Earning' }]);
-                    }}
+                    onClick={handleOpenCreate}
                     className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2"
                 >
-                    <Plus className="mr-2 h-4 w-4" /> Define Structure
+                    <Plus className="mr-2 h-4 w-4" /> Define Salary
                 </button>
             </div>
 
-            {loading ? (
-                <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-            ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {structures.map((st, index) => {
-                        const designation = teachers.find(t => t.id === st.employee_id)?.designation
-                            || staffMembers.find(s => s.id === st.employee_id)?.designation
-                            || 'Employee';
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {structures.map(struct => {
+                    const totalEarnings = struct.items?.filter(i => i.type === 'Earning').reduce((sum, i) => sum + i.amount, 0) || 0;
+                    const totalDeductions = struct.items?.filter(i => i.type === 'Deduction').reduce((sum, i) => sum + i.amount, 0) || 0;
 
-                        // Cycle through colors for top border
-                        const colors = [
-                            'border-t-pink-500',
-                            'border-t-purple-500',
-                            'border-t-blue-500',
-                            'border-t-green-500'
-                        ];
-                        const borderColor = colors[index % colors.length];
-
-                        // Calculate totals
-                        const totalEarnings = st.items?.filter(i => i.type === 'Earning').reduce((sum, i) => sum + i.amount, 0) || 0;
-                        const totalDeductions = st.items?.filter(i => i.type === 'Deduction').reduce((sum, i) => sum + i.amount, 0) || 0;
-                        const netSalary = totalEarnings - totalDeductions;
-
-                        return (
-                            <div key={st.id} className={`rounded-lg border-t-4 ${borderColor} bg-white shadow-sm hover:shadow-md transition-shadow relative group`}>
-                                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 z-10">
-                                    <button
-                                        onClick={() => handleEdit(st)}
-                                        className="p-1.5 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors"
-                                        title="Edit"
-                                    >
-                                        <Pencil className="h-3.5 w-3.5" />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(st.id)}
-                                        className="p-1.5 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition-colors"
-                                        title="Delete"
-                                    >
-                                        <Trash className="h-3.5 w-3.5" />
-                                    </button>
+                    return (
+                        <div key={struct.id} className="rounded-lg border bg-card text-card-foreground shadow-sm">
+                            <div className="p-6 flex flex-col gap-4">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-2">
+                                        <div className="bg-muted p-2 rounded-full">
+                                            <User className="h-4 w-4 text-muted-foreground" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-semibold leading-none tracking-tight">{struct.employee_name}</h3>
+                                            <p className="text-sm text-muted-foreground mt-1">
+                                                {fiscalYears.find(fy => fy.id === struct.fiscal_year_id)?.name}
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div className="p-5">
-                                    <div className="mb-3 pr-16">
-                                        <h3 className="font-bold text-lg text-gray-900">{st.employee_name}</h3>
-                                        <p className="text-sm text-gray-500 mt-0.5">{designation}</p>
+                                <div className="space-y-1 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Base Earnings:</span>
+                                        <span className="font-medium text-green-600">{totalEarnings.toLocaleString()}</span>
                                     </div>
-
-                                    <div className="mb-4 pb-3 border-b">
-                                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Net Salary</span>
-                                        <p className="text-xl font-bold text-gray-900 mt-1">NPR {netSalary.toLocaleString()}</p>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Deductions:</span>
+                                        <span className="font-medium text-red-600">-{totalDeductions.toLocaleString()}</span>
                                     </div>
-
-                                    <div className="space-y-3">
-                                        <div>
-                                            <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">Earnings</p>
-                                            <ul className="space-y-1.5">
-                                                {st.items?.filter(i => i.type === 'Earning').map(item => (
-                                                    <li key={item.id} className="flex justify-between text-sm">
-                                                        <span className="text-gray-600">{item.gl_head?.name}</span>
-                                                        <span className="font-medium text-gray-900">NPR {item.amount.toLocaleString()}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                            <div className="flex justify-between text-sm font-semibold mt-2 pt-2 border-t border-green-100">
-                                                <span className="text-green-700">Total Earnings</span>
-                                                <span className="text-green-700">NPR {totalEarnings.toLocaleString()}</span>
-                                            </div>
-                                        </div>
-
-                                        {st.items?.some(i => i.type === 'Deduction') && (
-                                            <div>
-                                                <p className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-2">Deductions</p>
-                                                <ul className="space-y-1.5">
-                                                    {st.items?.filter(i => i.type === 'Deduction').map(item => (
-                                                        <li key={item.id} className="flex justify-between text-sm">
-                                                            <span className="text-gray-600">{item.gl_head?.name}</span>
-                                                            <span className="font-medium text-gray-900">NPR {item.amount.toLocaleString()}</span>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                                <div className="flex justify-between text-sm font-semibold mt-2 pt-2 border-t border-red-100">
-                                                    <span className="text-red-700">Total Deductions</span>
-                                                    <span className="text-red-700">NPR {totalDeductions.toLocaleString()}</span>
-                                                </div>
-                                            </div>
-                                        )}
+                                    <div className="border-t pt-2 mt-2 flex justify-between font-bold">
+                                        <span>Net Salary</span>
+                                        <span>{(totalEarnings - totalDeductions).toLocaleString()}</span>
                                     </div>
+                                </div>
+
+                                <div className="flex justify-end gap-2 pt-2 border-t mt-2">
+                                    <button onClick={() => handleEdit(struct)} className="p-2 hover:bg-muted rounded-md text-blue-600">
+                                        <Pencil className="h-4 w-4" />
+                                    </button>
+                                    <button onClick={() => handleDelete(struct.id)} className="p-2 hover:bg-muted rounded-md text-red-600">
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
                                 </div>
                             </div>
-                        );
-                    })}
-                    {structures.length === 0 && (
-                        <div className="col-span-full text-center text-muted-foreground py-10">
-                            No salary structures defined.
                         </div>
-                    )}
-                </div>
-            )}
+                    );
+                })}
+            </div>
 
+            {/* Modal */}
             {isDialogOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                    <div className="bg-background rounded-lg shadow-lg w-full max-w-lg p-6 animate-in fade-in zoom-in duration-200 overflow-y-auto max-h-[90vh]">
-                        <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit' : 'New'} Salary Structure</h3>
-                        <form onSubmit={handleCreate} className="space-y-4">
-                            <div className="space-y-4 mb-4 border rounded-md p-4 bg-muted/20">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Employee Type</label>
-                                    <div className="flex gap-4">
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name="empType"
-                                                value="Teacher"
-                                                checked={employeeType === 'Teacher'}
-                                                onChange={() => { setEmployeeType('Teacher'); setSelectedEmployeeId(''); }}
-                                                className="h-4 w-4"
-                                            />
-                                            <span className="text-sm">Teaching Staff</span>
-                                        </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name="empType"
-                                                value="Staff"
-                                                checked={employeeType === 'Staff'}
-                                                onChange={() => { setEmployeeType('Staff'); setSelectedEmployeeId(''); }}
-                                                className="h-4 w-4"
-                                            />
-                                            <span className="text-sm">Support Staff</span>
-                                        </label>
-                                    </div>
-                                </div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
+                    <div className="bg-background rounded-lg shadow-lg w-full max-w-3xl p-6 animate-in fade-in zoom-in duration-200">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-lg font-semibold">{editingId ? 'Edit Salary Structure' : 'New Salary Structure'}</h2>
+                            <button onClick={() => setIsDialogOpen(false)}><X className="h-5 w-5" /></button>
+                        </div>
 
+                        <form onSubmit={handleSave} className="space-y-6">
+                            <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">Select Employee</label>
+                                    <label className="text-sm font-medium">Employee</label>
                                     <select
-                                        value={selectedEmployeeId}
-                                        onChange={(e) => setSelectedEmployeeId(e.target.value)}
                                         required
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                        value={formData.employee_id}
+                                        onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                        disabled={!!editingId} // Usually can't change employee for existing structure
                                     >
-                                        <option value="">-- Select {employeeType} --</option>
-                                        {employeeType === 'Teacher' ? (
-                                            teachers.map(t => (
-                                                <option key={t.id} value={t.id}>{t.first_name} {t.last_name} ({t.designation || 'Teacher'})</option>
-                                            ))
-                                        ) : (
-                                            staffMembers.map(s => (
-                                                <option key={s.id} value={s.id}>{s.first_name} {s.last_name} ({s.designation})</option>
-                                            ))
-                                        )}
+                                        <option value="">Select Employee...</option>
+                                        {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.role})</option>)}
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Fiscal Year</label>
+                                    <select
+                                        required
+                                        value={formData.fiscal_year_id}
+                                        onChange={(e) => setFormData({ ...formData, fiscal_year_id: e.target.value })}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    >
+                                        <option value="">Select Year...</option>
+                                        {fiscalYears.map(fy => <option key={fy.id} value={fy.id}>{fy.name}</option>)}
                                     </select>
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Fiscal Year</label>
-                                <select name="fiscal_year_id" required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                                    {fiscalYears.map(fy => (
-                                        <option key={fy.id} value={fy.id}>{fy.name}</option>
-                                    ))}
-                                </select>
-                            </div>
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <label className="text-sm font-medium">Structure Components</label>
+                                    <button type="button" onClick={addItem} className="text-sm flex items-center text-primary hover:underline">
+                                        <PlusCircle className="h-4 w-4 mr-1" /> Add Component
+                                    </button>
+                                </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Salary Components</label>
-                                <div className="space-y-2 border rounded-md p-3 max-h-60 overflow-y-auto">
-                                    {formRows.map((row, index) => (
-                                        <div key={index} className="flex gap-2 items-end">
-                                            <div className="w-24 space-y-1">
-                                                <span className="text-xs text-muted-foreground">Type</span>
-                                                <select
-                                                    value={row.type}
-                                                    onChange={(e) => updateRow(index, 'type', e.target.value)}
-                                                    required
-                                                    className="flex h-9 w-full rounded-md border border-input bg-background px-2 py-1 text-sm bg-transparent"
-                                                >
-                                                    <option value="Earning">Earning</option>
-                                                    <option value="Deduction">Deduction</option>
-                                                </select>
-                                            </div>
-                                            <div className="flex-1 space-y-1">
-                                                <span className="text-xs text-muted-foreground">GL Head</span>
-                                                <select
-                                                    value={row.gl_head_id}
-                                                    onChange={(e) => updateRow(index, 'gl_head_id', e.target.value)}
-                                                    required
-                                                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-                                                >
-                                                    <option value="">Select Head</option>
-                                                    {(() => {
-                                                        const filteredHeads = glHeads.filter(h => row.type === 'Earning' ? h.type === 'Expense' : true);
-                                                        const roots = filteredHeads.filter(h => !filteredHeads.find(p => p.id === h.parent_id));
-
-                                                        const renderSmartHierarchy = (items: GLHead[], level = 0): React.ReactNode => {
-                                                            return items.map(h => {
-                                                                const children = filteredHeads.filter(c => c.parent_id === h.id);
-                                                                return (
-                                                                    <React.Fragment key={h.id}>
-                                                                        <option value={h.id}>
-                                                                            {'\u00A0'.repeat(level * 4) + h.name} ({h.type})
-                                                                        </option>
-                                                                        {renderSmartHierarchy(children, level + 1)}
-                                                                    </React.Fragment>
-                                                                )
-                                                            });
-                                                        };
-
-                                                        return renderSmartHierarchy(roots);
-                                                    })()}
-                                                </select>
-                                            </div>
-                                            <div className="w-24 space-y-1">
-                                                <span className="text-xs text-muted-foreground">Amount</span>
-                                                <input
-                                                    type="number"
-                                                    value={row.amount}
-                                                    onChange={(e) => updateRow(index, 'amount', Number(e.target.value))}
-                                                    required
-                                                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-                                                />
-                                            </div>
-                                            <button type="button" onClick={() => removeRow(index)} className="h-9 w-9 flex items-center justify-center text-destructive hover:bg-destructive/10 rounded">
-                                                <Trash className="h-4 w-4" />
+                                <div className="space-y-2 max-h-[300px] overflow-y-auto border rounded-md p-2">
+                                    {formData.items.map((item, index) => (
+                                        <div key={index} className="flex gap-2 items-center">
+                                            <select
+                                                value={item.type}
+                                                onChange={(e) => updateItem(index, 'type', e.target.value)}
+                                                className="w-32 h-9 rounded-md border border-input bg-background px-3 text-sm"
+                                            >
+                                                <option value="Earning">Earning</option>
+                                                <option value="Deduction">Deduction</option>
+                                            </select>
+                                            <select
+                                                value={item.gl_head_id}
+                                                onChange={(e) => updateItem(index, 'gl_head_id', e.target.value)}
+                                                className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm"
+                                            >
+                                                {glHeads.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                                            </select>
+                                            <input
+                                                type="number"
+                                                value={item.amount}
+                                                onChange={(e) => updateItem(index, 'amount', e.target.value)}
+                                                className="w-24 h-9 rounded-md border border-input bg-background px-3 text-sm"
+                                                placeholder="Amount"
+                                            />
+                                            <button type="button" onClick={() => removeItem(index)} className="text-red-500 hover:bg-red-50 p-1 rounded">
+                                                <X className="h-4 w-4" />
                                             </button>
                                         </div>
                                     ))}
-                                    <button type="button" onClick={addRow} className="text-sm text-primary hover:underline flex items-center mt-2">
-                                        <Plus className="h-3 w-3 mr-1" /> Add Component
-                                    </button>
+                                    {formData.items.length === 0 && <p className="text-sm text-muted-foreground text-center py-2">No components added.</p>}
+                                </div>
+
+                                <div className="flex justify-end gap-6 font-medium text-sm">
+                                    <div className="text-green-600">Total Earnings: {formData.items.filter(i => i.type === 'Earning').reduce((sum, i) => sum + (Number(i.amount) || 0), 0).toLocaleString()}</div>
+                                    <div className="text-red-600">Total Deductions: {formData.items.filter(i => i.type === 'Deduction').reduce((sum, i) => sum + (Number(i.amount) || 0), 0).toLocaleString()}</div>
+                                    <div className="text-foreground border-l pl-4 font-bold">Net Salary: {calculateNet(formData.items).toLocaleString()}</div>
                                 </div>
                             </div>
 
-                            <div className="flex justify-end gap-2 mt-6">
-                                <button type="button" onClick={() => setIsDialogOpen(false)} className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground">Cancel</button>
-                                <button type="submit" className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90">{editingId ? 'Update' : 'Create'} Structure</button>
+                            <div className="flex justify-end gap-2 pt-4 border-t">
+                                <button type="button" onClick={() => setIsDialogOpen(false)} className="px-4 py-2 text-sm font-medium border rounded-md hover:bg-accent">Cancel</button>
+                                <button type="submit" className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90">Save Structure</button>
                             </div>
                         </form>
                     </div>

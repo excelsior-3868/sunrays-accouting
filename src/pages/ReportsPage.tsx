@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Loader2, Filter } from 'lucide-react';
-import { getPayments, getExpenses, getGLHeads } from '@/lib/api';
+import { Loader2, Filter, Search, X } from 'lucide-react';
+import { getPayments, getExpenses, getGLHeads, getStudents } from '@/lib/api';
 import { type GLHead } from '@/types';
 
 type Transaction = {
@@ -10,6 +10,7 @@ type Transaction = {
     particulars: string;
     amount: number;
     gl_head?: string;
+    class_name?: string;
 };
 
 export default function ReportsPage() {
@@ -21,32 +22,63 @@ export default function ReportsPage() {
     // Filters
     const [filteredTxns, setFilteredTxns] = useState<Transaction[]>([]);
     const [selectedHeadId, setSelectedHeadId] = useState<string>('all');
+    // Searchable GL Head Filter States
+    const [glSearchQuery, setGlSearchQuery] = useState('');
+    const [isGlSearchFocused, setIsGlSearchFocused] = useState(false);
+    const [focusedIndex, setFocusedIndex] = useState(-1);
+
+    // Memoize the filtered list to allow safe indexing
+    const filteredHeads = heads.filter(h => h.name.toLowerCase().includes(glSearchQuery.toLowerCase()));
+
+    // Reset focused index when query changes
+    useEffect(() => {
+        setFocusedIndex(-1);
+    }, [glSearchQuery]);
+
+    // const [selectedClass, setSelectedClass] = useState<string>('All');
+    // const [availableClasses, setAvailableClasses] = useState<string[]>([]);
 
     useEffect(() => {
         const fetchRemote = async () => {
             try {
-                const [payData, expData, glData] = await Promise.all([
+                const [payData, expData, glData, studentData] = await Promise.all([
                     getPayments(),
                     getExpenses(),
-                    getGLHeads()
+                    getGLHeads(),
+                    getStudents()
                 ]);
 
+                // Map Student -> Class
+                const studentClassMap = new Map(studentData.map((s: any) => [s.id, s.class_name || s.class || 'Unassigned']));
+                // Standard classes
+                // const PREDEFINED_CLASSES = ['Play Group', 'Nursery', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+                // const dynamicClasses = Array.from(new Set(studentData.map((s: any) => s.class_name || s.class || 'Unassigned'))).filter(Boolean) as string[];
+                // const classes = Array.from(new Set([...PREDEFINED_CLASSES, ...dynamicClasses])).sort();
+                // setAvailableClasses(classes);
+
                 // Normalize data
-                const incomeTxns: Transaction[] = payData.map(p => ({
-                    id: p.id,
-                    date: p.payment_date,
-                    type: 'Income',
+                const incomeTxns: Transaction[] = payData.map(p => {
                     // @ts-ignore
-                    particulars: `Fee Receipt - ${p.invoice?.student_name} (${p.invoice?.student_id})`,
-                    amount: p.amount,
-                    gl_head: p.payment_mode_gl_id // This is the Asset GL (Cash/Bank)
-                }));
+                    const studentId = p.invoice?.student_id;
+                    const className = studentId ? studentClassMap.get(studentId) : undefined;
+
+                    return {
+                        id: p.id,
+                        date: p.payment_date,
+                        type: 'Income',
+                        // @ts-ignore
+                        particulars: `Fee Receipt - ${p.invoice?.student_name} - ${p.invoice?.month || 'N/A'}`,
+                        amount: p.amount,
+                        gl_head: p.payment_mode_gl_id, // This is the Asset GL (Cash/Bank)
+                        class_name: className
+                    };
+                });
 
                 const expenseTxns: Transaction[] = expData.map(e => ({
                     id: e.id,
                     date: e.expense_date,
                     type: 'Expense',
-                    particulars: `${e.expense_head?.name} - ${e.description || ''}`,
+                    particulars: `${e.expense_head?.name} ${e.description ? '-' + e.description : ''}`,
                     amount: e.amount,
                     gl_head: e.expense_head_id // This is the Expense GL
                 }));
@@ -67,19 +99,20 @@ export default function ReportsPage() {
 
     // Effect for Filtering
     useEffect(() => {
-        if (selectedHeadId === 'all') {
-            setFilteredTxns(transactions);
-        } else {
-            // Very basic filtering: if Fetching Ledger for "Cash", we want txns where Cash was involved
-            // For Income (Fee Receipt), Asset GL is payment_mode_gl_id (mapped to gl_head above)
-            // For Expense, Expense GL is expense_head_id (mapped to gl_head above)
-            // Ideally we check BOTH sides of entry but for this MVP...
-            // Wait, expense also has payment_mode (Asset).
-            // Let's stick to the mapped 'gl_head' in Transaction type for now, which is primary classification
-            // This is "Simple Ledger"
-            setFilteredTxns(transactions.filter(t => t.gl_head === selectedHeadId));
+        let result = transactions;
+
+        // 1. Filter by Head (General Ledger Tab)
+        if (selectedHeadId !== 'all') {
+            result = result.filter(t => t.gl_head === selectedHeadId);
         }
-    }, [selectedHeadId, transactions]);
+
+        // 2. Filter by Class (Project requirement: Removed Class filter)
+        // if (selectedClass !== 'All') {
+        //     result = result.filter(t => t.class_name === selectedClass);
+        // }
+
+        setFilteredTxns(result);
+    }, [selectedHeadId, /* selectedClass, */ transactions]);
 
 
     if (loading) return <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -104,21 +137,103 @@ export default function ReportsPage() {
                 </div>
             </div>
 
-            {activeTab === 'ledger' && (
-                <div className="flex items-center gap-4 bg-card p-4 rounded-lg border">
+            <div className="flex flex-wrap items-center gap-4 bg-card p-4 rounded-lg border">
+                <div className="flex items-center gap-2">
                     <Filter className="h-4 w-4 text-muted-foreground" />
-                    <select
-                        value={selectedHeadId}
-                        onChange={(e) => setSelectedHeadId(e.target.value)}
-                        className="flex h-9 w-64 rounded-md border border-input bg-background px-3 py-1 text-sm"
-                    >
-                        <option value="all">All Transactions</option>
-                        {heads.map(h => (
-                            <option key={h.id} value={h.id}>{h.name} ({h.type})</option>
-                        ))}
-                    </select>
+                    <span className="text-sm font-medium">Filters:</span>
                 </div>
-            )}
+
+                {/* GL Head Searchable Input */}
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Search GL Head..."
+                        className="pl-10 pr-8 h-9 w-[400px] rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        value={glSearchQuery}
+                        onChange={(e) => {
+                            setGlSearchQuery(e.target.value);
+                            if (selectedHeadId !== 'all') setSelectedHeadId('all');
+                        }}
+                        onFocus={() => setIsGlSearchFocused(true)}
+                        onBlur={() => setTimeout(() => setIsGlSearchFocused(false), 200)}
+                        onKeyDown={(e) => {
+                            if (!isGlSearchFocused) return;
+                            const options = [{ id: 'all', name: 'All GL Heads', type: '' }, ...filteredHeads];
+
+                            if (e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                setFocusedIndex(prev => (prev < options.length - 1 ? prev + 1 : prev));
+                            } else if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                setFocusedIndex(prev => (prev > 0 ? prev - 1 : 0));
+                            } else if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (focusedIndex >= 0 && focusedIndex < options.length) {
+                                    const selected = options[focusedIndex];
+                                    if (selected.id === 'all') {
+                                        setSelectedHeadId('all');
+                                        setGlSearchQuery('');
+                                    } else {
+                                        setSelectedHeadId(selected.id);
+                                        setGlSearchQuery(selected.name);
+                                    }
+                                    setIsGlSearchFocused(false);
+                                }
+                            }
+                        }}
+                    />
+                    {glSearchQuery && (
+                        <button
+                            onClick={() => {
+                                setGlSearchQuery('');
+                                setSelectedHeadId('all');
+                            }}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    )}
+
+                    {isGlSearchFocused && (
+                        <div className="absolute z-50 mt-1 w-full bg-popover text-popover-foreground rounded-md border shadow-md animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
+                            <div
+                                className={`px-3 py-2 cursor-pointer text-sm font-medium border-b hover:bg-muted ${focusedIndex === 0 ? 'bg-muted' : ''}`}
+                                onMouseDown={(e) => {
+                                    e.preventDefault(); // Prevent blur
+                                    setSelectedHeadId('all');
+                                    setGlSearchQuery('');
+                                    setIsGlSearchFocused(false);
+                                }}
+                            >
+                                All GL Heads
+                            </div>
+                            {filteredHeads.map((h, i) => (
+                                <div
+                                    key={h.id}
+                                    className={`px-3 py-2 cursor-pointer text-sm flex justify-between hover:bg-muted ${focusedIndex === i + 1 ? 'bg-muted' : ''}`}
+                                    onMouseDown={(e) => {
+                                        e.preventDefault(); // Prevent blur
+                                        setSelectedHeadId(h.id);
+                                        setGlSearchQuery(h.name);
+                                        setIsGlSearchFocused(false);
+                                    }}
+                                >
+                                    <span>{h.name}</span>
+                                    <span className="text-xs text-muted-foreground ml-2 capitalize">{h.type}</span>
+                                </div>
+                            ))}
+                            {filteredHeads.length === 0 && (
+                                <div className="p-2 text-sm text-muted-foreground text-center">No results</div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+
+            </div>
 
             <div className="rounded-lg border bg-card overflow-hidden">
                 <table className="w-full caption-bottom text-sm">
@@ -127,6 +242,7 @@ export default function ReportsPage() {
                             <th className="h-12 px-4 text-left align-middle font-medium">Date</th>
                             <th className="h-12 px-4 text-left align-middle font-medium">Type</th>
                             <th className="h-12 px-4 text-left align-middle font-medium">Particulars</th>
+                            <th className="h-12 px-4 text-left align-middle font-medium">Class</th>
                             <th className="h-12 px-4 text-right align-middle font-medium">Debit (In)</th>
                             <th className="h-12 px-4 text-right align-middle font-medium">Credit (Out)</th>
                         </tr>
@@ -142,6 +258,7 @@ export default function ReportsPage() {
                                     </span>
                                 </td>
                                 <td className="p-4 align-middle">{txn.particulars}</td>
+                                <td className="p-4 align-middle text-muted-foreground text-xs">{txn.class_name || '-'}</td>
                                 <td className="p-4 align-middle text-right text-green-600">
                                     {txn.type === 'Income' ? txn.amount : '-'}
                                 </td>
@@ -151,7 +268,7 @@ export default function ReportsPage() {
                             </tr>
                         ))}
                         {filteredTxns.length === 0 && (
-                            <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">No transactions found.</td></tr>
+                            <tr><td colSpan={6} className="p-4 text-center text-muted-foreground">No transactions found.</td></tr>
                         )}
                     </tbody>
                 </table>

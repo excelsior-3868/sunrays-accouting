@@ -603,6 +603,15 @@ export const updateTeacher = async (id: string, updates: Partial<import('../type
     return data;
 };
 
+export const deleteTeacher = async (id: string) => {
+    const { error } = await schoolSupabase
+        .from('teachers')
+        .delete()
+        .eq('id', id);
+
+    if (error) throw error;
+};
+
 export const getStaffMembers = async () => {
     const { data, error } = await supabase
         .from('staff')
@@ -636,6 +645,15 @@ export const updateStaffMember = async (id: string, updates: Partial<import('../
     return data;
 };
 
+export const deleteStaffMember = async (id: string) => {
+    const { error } = await supabase
+        .from('staff')
+        .delete()
+        .eq('id', id);
+
+    if (error) throw error;
+};
+
 /* -------------------------------------------------------------------------- */
 /*                                  GL Head Updates                           */
 /* -------------------------------------------------------------------------- */
@@ -658,7 +676,6 @@ export const updateGLHead = async (id: string, updates: Partial<GLHead>) => {
 
 export const getRoles = async () => {
     // 1. Fetch Roles
-    console.log('API: getRoles called');
     const { data: roles, error: rolesError } = await supabase
         .from('roles')
         .select('*')
@@ -668,34 +685,39 @@ export const getRoles = async () => {
         console.error('API: getRoles error fetching roles', rolesError);
         throw rolesError;
     }
-    console.log('API: getRoles fetched raw roles:', roles);
 
-    // 2. Fetch all Role Permissions
-    const { data: rolePerms, error: permsError } = await supabase
-        .from('role_permissions')
-        .select(`
-            role_id,
-            permission:permissions (
-                *
-            )
-        `);
+    try {
+        // 2. Fetch all Role Permissions
+        const { data: rolePerms, error: permsError } = await supabase
+            .from('role_permissions')
+            .select(`
+                role_id,
+                permission:permissions (
+                    *
+                )
+            `);
 
-    if (permsError) throw permsError;
+        if (permsError) throw permsError;
 
-    // 3. Map permissions to roles
-    const rolesWithPermissions = roles.map(role => {
-        const myPerms = rolePerms
-            .filter((rp: any) => rp.role_id === role.id)
-            .map((rp: any) => rp.permission)
-            .filter(Boolean);
+        // 3. Map permissions to roles
+        const rolesWithPermissions = roles.map(role => {
+            const myPerm_s = rolePerms
+                .filter((rp: any) => rp.role_id === role.id)
+                .map((rp: any) => rp.permission)
+                .filter(Boolean);
 
-        return {
-            ...role,
-            permissions: myPerms
-        };
-    });
+            return {
+                ...role,
+                permissions: myPerm_s
+            };
+        });
 
-    return rolesWithPermissions as import('../types').Role[];
+        return rolesWithPermissions as import('../types').Role[];
+    } catch (permError) {
+        console.warn('API: getRoles failed to fetch permissions, returning roles without permissions:', permError);
+        // Fallback: return roles without permissions
+        return roles.map(r => ({ ...r, permissions: [] }));
+    }
 };
 
 export const getPermissions = async () => {
@@ -706,6 +728,15 @@ export const getPermissions = async () => {
 
     if (error) throw error;
     return data as import('../types').Permission[];
+};
+
+export const getUsers = async () => {
+    const { count, error } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true });
+
+    if (error) throw error;
+    return count || 0;
 };
 
 export const createRole = async (

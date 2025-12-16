@@ -1,11 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Loader2, Search, X } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 import { getInvoices, createInvoice, getFeeStructures, getFiscalYears, getStudents } from '@/lib/api';
 import { type Invoice, type FeeStructure, type FiscalYear, type Student } from '@/types';
+import { usePermission } from '@/hooks/usePermission';
 
 export default function InvoicesPage() {
     const navigate = useNavigate();
+    const { can } = usePermission();
+    const { toast } = useToast();
     // Initialize with empty arrays to prevent "map of undefined" errors
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [loading, setLoading] = useState(true);
@@ -93,6 +97,7 @@ export default function InvoicesPage() {
 
     const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        if (!can('invoices.create')) return;
         const formData = new FormData(e.currentTarget);
         const structure = feeStructures.find(s => s.id === selectedStructureId);
 
@@ -130,7 +135,7 @@ export default function InvoicesPage() {
                 if (!selectedStudent) return;
 
                 if (isInvoiceBlocked(selectedStudent.id)) {
-                    alert(`Cannot create invoice: ${selectedStudent.name} already has an invoice for ${month}.`);
+                    toast({ variant: "destructive", title: "Error", description: `Cannot create invoice: ${selectedStudent.name} already has an invoice for ${month}.` });
                     return;
                 }
 
@@ -156,18 +161,18 @@ export default function InvoicesPage() {
                 }));
 
                 await createInvoice(newInvoice, items);
-                alert('Invoice created successfully.');
+                toast({ title: "Success", description: "Invoice created successfully." });
             } else {
                 // Batch Generation
                 if (!structure.class_name) {
-                    alert('Selected fee structure does not have a defined class.');
+                    toast({ variant: "destructive", title: "Error", description: "Selected fee structure does not have a defined class." });
                     return;
                 }
 
                 const studentsInClass = (allStudents || []).filter(s => s.class === structure.class_name);
 
                 if (studentsInClass.length === 0) {
-                    alert(`No students found for class ${structure.class_name}`);
+                    toast({ variant: "destructive", title: "Error", description: `No students found for class ${structure.class_name}` });
                     return;
                 }
 
@@ -204,7 +209,7 @@ export default function InvoicesPage() {
                     await createInvoice(newInvoice, items);
                     successCount++;
                 }
-                alert(`Batch Generation Complete:\n- Generated: ${successCount}\n- Skipped (Already has unpaid invoice): ${skippedCount}`);
+                toast({ title: "Success", description: `Batch Generation Complete: Generated: ${successCount}, Skipped: ${skippedCount}` });
             }
 
             setIsDialogOpen(false);
@@ -217,7 +222,7 @@ export default function InvoicesPage() {
             fetchData();
         } catch (error) {
             console.error('Error creating invoice:', error);
-            alert('An error occurred while creating invoices.');
+            toast({ variant: "destructive", title: "Error", description: "An error occurred while creating invoices." });
         }
     };
 
@@ -353,9 +358,11 @@ export default function InvoicesPage() {
                         )}
                     </div>
 
-                    <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
-                        <Plus className="mr-2 h-4 w-4" /> Create Invoice
-                    </button>
+                    {can('invoices.create') && (
+                        <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
+                            <Plus className="mr-2 h-4 w-4" /> Create Invoice
+                        </button>
+                    )}
                 </div>
             </div>
 

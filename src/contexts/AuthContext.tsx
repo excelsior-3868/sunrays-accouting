@@ -135,7 +135,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     useEffect(() => {
         if (!loading) {
-            console.log('Auth Context Ready. Role:', role, 'Permissions:', permissions.length);
+            // console.log('Auth Context Ready. Role:', role, 'Permissions:', permissions.length);
         }
     }, [loading, role, permissions]);
 

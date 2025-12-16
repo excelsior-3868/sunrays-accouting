@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { Toaster } from '@/components/ui/toaster';
 import RequireAuth from '@/components/auth/RequireAuth';
 import LoginPage from '@/pages/LoginPage';
 import DashboardPage from '@/pages/DashboardPage';
@@ -13,6 +14,12 @@ import ExpensesPage from '@/pages/ExpensesPage';
 import SalaryStructuresPage from '@/pages/SalaryStructuresPage';
 import PayrollPage from '@/pages/PayrollPage';
 import ReportsPage from '@/pages/ReportsPage';
+import DefaultersReport from '@/pages/reports/DefaultersReport';
+import StudentLedgerReport from '@/pages/reports/StudentLedgerReport';
+import ProfitLossReport from '@/pages/reports/ProfitLossReport';
+import CashFlowReport from '@/pages/reports/CashFlowReport';
+import SalarySheetReport from '@/pages/reports/SalarySheetReport';
+import StaffLedgerReport from '@/pages/reports/StaffLedgerReport';
 import StudentsPage from '@/pages/StudentsPage';
 import TeachersPage from '@/pages/TeachersPage';
 import StaffsPage from '@/pages/StaffsPage';
@@ -58,7 +65,14 @@ function App() {
               </ProtectedRoute>
             } />
 
-            <Route path="/reports" element={<ReportsPage />} />
+            {/* <Route path="/reports" element={<ReportsPage />} /> */}
+            <Route path="/reports/daybook" element={<ReportsPage />} /> {/* Maintaining old one as Daybook for now */}
+            <Route path="/reports/defaulters" element={<DefaultersReport />} />
+            <Route path="/reports/student-ledger" element={<StudentLedgerReport />} />
+            <Route path="/reports/profit-loss" element={<ProfitLossReport />} />
+            <Route path="/reports/cash-flow" element={<CashFlowReport />} />
+            <Route path="/reports/salary-sheet" element={<SalarySheetReport />} />
+            <Route path="/reports/staff-ledger" element={<StaffLedgerReport />} />
             <Route path="/students" element={<StudentsPage />} />
             <Route path="/teachers" element={<TeachersPage />} />
 
@@ -77,8 +91,9 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
+        <Toaster />
       </BrowserRouter>
-    </AuthProvider>
+    </AuthProvider >
   )
 }
 

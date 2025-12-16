@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Plus, Loader2, Trash2, FileText, Eye } from 'lucide-react';
+import { Plus, Loader2, Trash2, Eye } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 import { getPayrollRuns, generatePayrollRun, getFiscalYears, approvePayrollRun, getPayrollRunDetails, deletePayrollRun } from '@/lib/api';
 import { type PayrollRun, type FiscalYear } from '@/types';
+import { usePermission } from '@/hooks/usePermission';
 
 export default function PayrollPage() {
+    const { can } = usePermission();
+    const { toast } = useToast();
     const [runs, setRuns] = useState<PayrollRun[]>([]);
     const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([]);
     const [loading, setLoading] = useState(true);
@@ -32,6 +36,7 @@ export default function PayrollPage() {
 
     const handleGenerate = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        if (!can('payroll.manage')) return;
         const formData = new FormData(e.currentTarget);
 
         const fyId = formData.get('fiscal_year_id') as string;
@@ -40,7 +45,7 @@ export default function PayrollPage() {
         // Validation: Check if payroll for this month and FY already exists
         const exists = runs.some(r => r.fiscal_year_id === fyId && r.month === month);
         if (exists) {
-            alert(`Payroll for ${month} already exists in this fiscal year!`);
+            toast({ variant: "destructive", title: "Error", description: `Payroll for ${month} already exists in this fiscal year!` });
             return;
         }
 
@@ -48,31 +53,36 @@ export default function PayrollPage() {
             await generatePayrollRun(fyId, month);
             setIsDialogOpen(false);
             fetchData();
+            toast({ title: "Success", description: "Payroll run generated successfully" });
         } catch (error) {
             console.error('Error generating payroll:', error);
+            toast({ variant: "destructive", title: "Error", description: "Failed to generate payroll run" });
         }
     };
 
     const handleApprove = async (id: string) => {
+        if (!can('payroll.manage')) return;
         if (!confirm('Are you sure you want to approve and pay for this payroll run? This will create expense records and cannot be undone.')) return;
         try {
             await approvePayrollRun(id);
             fetchData();
-            alert('Payroll approved and expenses recorded successfully!');
+            toast({ title: "Success", description: "Payroll approved and expenses recorded successfully!" });
         } catch (error) {
             console.error('Error approving payroll:', error);
-            alert('Failed to approve payroll.');
+            toast({ variant: "destructive", title: "Error", description: "Failed to approve payroll." });
         }
     };
 
     const handleDelete = async (id: string) => {
+        if (!can('payroll.manage')) return;
         if (!confirm('Are you sure you want to delete this payroll run? All associated payslips will be removed. This cannot be undone.')) return;
         try {
             await deletePayrollRun(id);
             fetchData();
+            toast({ title: "Success", description: "Payroll run deleted" });
         } catch (error) {
             console.error('Error deleting payroll:', error);
-            alert('Failed to delete payroll run.');
+            toast({ variant: "destructive", title: "Error", description: "Failed to delete payroll run." });
         }
     };
 
@@ -84,7 +94,7 @@ export default function PayrollPage() {
             setViewingRun(runDetails);
         } catch (error) {
             console.error('Error fetching details:', error);
-            alert('Failed to fetch payslips.');
+            toast({ variant: "destructive", title: "Error", description: "Failed to fetch payslips." });
         }
     };
 
@@ -128,9 +138,11 @@ export default function PayrollPage() {
                         <option value="Posted">Posted (Paid)</option>
                     </select>
 
-                    <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
-                        <Plus className="mr-2 h-4 w-4" /> Run Payroll
-                    </button>
+                    {can('payroll.manage') && (
+                        <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
+                            <Plus className="mr-2 h-4 w-4" /> Run Payroll
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -168,7 +180,7 @@ export default function PayrollPage() {
                                                 <Eye size={18} />
                                             </button>
 
-                                            {!run.is_posted && (
+                                            {!run.is_posted && can('payroll.manage') && (
                                                 <button
                                                     className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 w-9 text-red-600"
                                                     onClick={() => handleDelete(run.id)}
@@ -262,7 +274,7 @@ export default function PayrollPage() {
 
                         <div className="flex justify-end gap-2 mt-6">
                             <button onClick={() => setViewingRun(null)} className="h-9 px-4 rounded-md border text-sm hover:bg-accent">Close</button>
-                            {!viewingRun.is_posted && (
+                            {!viewingRun.is_posted && can('payroll.manage') && (
                                 <button
                                     onClick={() => {
                                         handleApprove(viewingRun.id);

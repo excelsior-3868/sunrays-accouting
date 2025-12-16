@@ -1,336 +1,271 @@
+
 import { useEffect, useState } from 'react';
-import { Loader2, Plus, X } from 'lucide-react';
-import { getTeachers, getStaffMembers, createStaffMember } from '@/lib/api';
-
-
-type StaffDisplay = {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email?: string;
-    phone?: string;
-    address?: string;
-    category?: string;
-    designation?: string;
-    employment_type?: string;
-    service_status?: string;
-};
+import { Plus, Pencil, Trash2, X, Search, Loader2 } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
+import {
+    getTeachers, createTeacher, updateTeacher, deleteTeacher,
+    getStaffMembers, createStaffMember, updateStaffMember, deleteStaffMember
+} from '@/lib/api';
+import { type Teacher, type Staff } from '@/types';
 
 export default function StaffsPage() {
-    const [staffs, setStaffs] = useState<StaffDisplay[]>([]);
+    const { toast } = useToast();
+    const [activeTab, setActiveTab] = useState<'teachers' | 'staff'>('teachers');
     const [loading, setLoading] = useState(true);
+
+    const [teachers, setTeachers] = useState<Teacher[]>([]);
+    const [staff, setStaff] = useState<Staff[]>([]);
+
+    // Search
+    const [searchQuery, setSearchQuery] = useState('');
+
+    // Dialog
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [editingStaff, setEditingStaff] = useState<StaffDisplay | null>(null);
+    const [editingId, setEditingId] = useState<string | null>(null);
 
-    // Filter states
-    const [categoryFilter, setCategoryFilter] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
+    // Generic Form Data
+    const [formData, setFormData] = useState({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        address: '',
+        designation: '',
+        category: '', // Teaching Staff / Support Staff or other
+        employment_type: 'Full Time',
+        service_status: 'Active'
+    });
 
-    const fetchStaffs = async () => {
+    const fetchData = async () => {
+        setLoading(true);
         try {
-            const [teachersData, staffData] = await Promise.all([
+            const [tData, sData] = await Promise.all([
                 getTeachers(),
                 getStaffMembers()
             ]);
-
-            // Normalize Teachers
-            const normalizedTeachers: StaffDisplay[] = teachersData.map(t => ({
-                id: t.id,
-                first_name: t.first_name,
-                last_name: t.last_name,
-                email: t.email,
-                phone: t.phone,
-                address: t.address,
-                category: t.category || 'Teaching Staff',
-                designation: t.designation || 'Teacher',
-                employment_type: 'Permanent', // Default for now
-                service_status: 'Active' // Default
-            }));
-
-            // Normalize Support Staff
-            const normalizedStaff: StaffDisplay[] = staffData.map(s => ({
-                id: s.id,
-                first_name: s.first_name,
-                last_name: s.last_name,
-                phone: s.mobile_number,
-                address: s.address,
-                category: s.category || 'Support Staff',
-                designation: s.designation,
-                employment_type: s.employment_type,
-                service_status: s.service_status
-            }));
-
-            setStaffs([...normalizedTeachers, ...normalizedStaff]);
+            setTeachers(tData);
+            setStaff(sData);
         } catch (error) {
-            console.error('Error fetching staff:', error);
+            console.error(error);
+            toast({ variant: "destructive", title: "Error", description: "Failed to load data" });
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchStaffs();
+        fetchData();
     }, []);
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        const formData = new FormData(e.currentTarget);
-        const category = formData.get('category') as string;
-        const email = formData.get('email') as string;
+    const filteredList = activeTab === 'teachers'
+        ? teachers.filter(t => `${t.first_name} ${t.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()))
+        : staff.filter(s => `${s.first_name} ${s.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()));
 
-        const commonData = {
-            first_name: formData.get('first_name') as string,
-            last_name: formData.get('last_name') as string,
-            address: formData.get('address') as string,
-            designation: formData.get('designation') as string,
-        };
+    const handleOpenCreate = () => {
+        setEditingId(null);
+        setFormData({
+            first_name: '',
+            last_name: '',
+            email: '',
+            phone: '',
+            address: '',
+            designation: activeTab === 'teachers' ? 'Teacher' : 'Staff',
+            category: activeTab === 'teachers' ? 'Teaching Staff' : 'Support Staff',
+            employment_type: 'Full Time',
+            service_status: 'Active'
+        });
+        setIsDialogOpen(true);
+    };
 
+    const handleEdit = (item: Teacher | Staff) => {
+        setEditingId(item.id);
+        // Map fields safely
+        setFormData({
+            first_name: item.first_name,
+            last_name: item.last_name,
+            email: (item as Teacher).email || '',
+            phone: (item as Teacher).phone || (item as Staff).mobile_number || '',
+            address: item.address || '',
+            designation: item.designation || '',
+            category: item.category || '',
+            employment_type: (item as Staff).employment_type || 'Full Time',
+            service_status: (item as Staff).service_status || 'Active'
+        });
+        setIsDialogOpen(true);
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm(`Are you sure you want to delete this ${activeTab === 'teachers' ? 'Teacher' : 'Staff Member'}?`)) return;
         try {
-            if (editingStaff) {
-                // UPDATE
-                if (editingStaff.category === 'Teaching Staff') {
-                    const teacherUpdates = {
-                        ...commonData,
-                        phone: formData.get('phone') as string,
-                        email: email, // Required for Teacher
-                        // Teachers might not have employment_type/service_status columns yet
-                    };
-                    await import('@/lib/api').then(m => m.updateTeacher(editingStaff.id, teacherUpdates));
-                } else {
-                    const staffUpdates = {
-                        ...commonData,
-                        mobile_number: formData.get('phone') as string,
-                        category: category,
-                        employment_type: formData.get('employment_type') as string,
-                        service_status: formData.get('service_status') as string,
-                    };
-                    await import('@/lib/api').then(m => m.updateStaffMember(editingStaff.id, staffUpdates));
-                }
-                alert('Staff updated successfully!');
+            if (activeTab === 'teachers') {
+                await deleteTeacher(id);
             } else {
-                // CREATE
-                if (category === 'Teaching Staff') {
-                    const newTeacher = {
-                        ...commonData,
-                        phone: formData.get('phone') as string,
-                        email: email, // Required for Teacher
-                        created_at: new Date().toISOString()
-                    };
-                    await import('@/lib/api').then(m => m.createTeacher(newTeacher));
-                } else {
-                    const newStaff = {
-                        ...commonData,
-                        mobile_number: formData.get('phone') as string,
-                        category: category,
-                        employment_type: formData.get('employment_type') as string,
-                        service_status: formData.get('service_status') as string,
-                    };
-                    await createStaffMember(newStaff);
-                }
-                alert('Staff created successfully!');
+                await deleteStaffMember(id);
             }
-            setIsDialogOpen(false);
-            setEditingStaff(null);
-            fetchStaffs();
+            toast({ title: "Success", description: "Deleted successfully" });
+            fetchData();
         } catch (error) {
-            console.error('Error saving staff:', error);
-            alert('Failed to save staff.');
+            console.error(error);
+            toast({ variant: "destructive", title: "Error", description: "Failed to delete" });
         }
     };
 
-    // ... filteredStaffs ...
-    const filteredStaffs = staffs.filter(staff => {
-        const category = staff.category || 'Teaching Staff';
-        const matchesCategory = categoryFilter ? category === categoryFilter : true;
-        const search = searchTerm.toLowerCase();
-        const matchesSearch =
-            staff.first_name.toLowerCase().includes(search) ||
-            staff.last_name.toLowerCase().includes(search) ||
-            (staff.designation || '').toLowerCase().includes(search);
+    const handleSave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const payload: any = {
+                first_name: formData.first_name,
+                last_name: formData.last_name,
+                address: formData.address,
+                designation: formData.designation,
+                category: formData.category,
+            };
 
-        return matchesCategory && matchesSearch;
-    });
+            if (activeTab === 'teachers') {
+                payload.email = formData.email;
+                payload.phone = formData.phone;
 
-    const handleEdit = (staff: StaffDisplay) => {
-        setEditingStaff(staff);
-        setIsDialogOpen(true);
+                if (editingId) await updateTeacher(editingId, payload);
+                else await createTeacher(payload);
+            } else {
+                payload.mobile_number = formData.phone;
+                payload.employment_type = formData.employment_type;
+                payload.service_status = formData.service_status;
+
+                if (editingId) await updateStaffMember(editingId, payload);
+                else await createStaffMember(payload);
+            }
+
+            toast({ title: "Success", description: "Saved successfully" });
+            setIsDialogOpen(false);
+            fetchData();
+        } catch (error) {
+            console.error(error);
+            toast({ variant: "destructive", title: "Error", description: "Failed to save" });
+        }
     };
+
+    if (loading) return <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">Staff Management</h1>
                 <button
-                    onClick={() => { setEditingStaff(null); setIsDialogOpen(true); }}
+                    onClick={handleOpenCreate}
                     className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2"
                 >
-                    <Plus className="mr-2 h-4 w-4" /> Add Staff
+                    <Plus className="mr-2 h-4 w-4" /> Add {activeTab === 'teachers' ? 'Teacher' : 'Staff'}
                 </button>
             </div>
 
-            <div className="flex gap-4 items-center">
-                <input
-                    type="search"
-                    placeholder="Search by name or designation..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="flex h-9 w-full max-w-sm rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
-                />
-                <select
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+            {/* Tabs */}
+            <div className="border-b flex gap-6">
+                <button
+                    onClick={() => setActiveTab('teachers')}
+                    className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'teachers' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                 >
-                    <option value="">All Categories</option>
-                    <option value="Teaching Staff">Teaching Staff</option>
-                    <option value="Support Staff">Support Staff</option>
-                </select>
+                    Teachers
+                </button>
+                <button
+                    onClick={() => setActiveTab('staff')}
+                    className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'staff' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                    Support Staff
+                </button>
             </div>
 
-            {loading ? (
-                <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-            ) : (
-                <div className="rounded-lg border bg-card overflow-hidden">
-                    <table className="w-full caption-bottom text-sm">
-                        <thead className="[&_tr]:border-b">
-                            <tr className="border-b transition-colors bg-primary text-primary-foreground hover:bg-primary/90">
-                                <th className="h-12 px-4 text-left align-middle font-medium">Name</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Role</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Status</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Contact</th>
-                                <th className="h-12 px-4 text-right align-middle font-medium">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="[&_tr:last-child]:border-0">
-                            {filteredStaffs.map((staff) => (
-                                <tr key={staff.id} className="border-b transition-colors hover:bg-muted/50">
-                                    <td className="p-4 align-middle font-medium">{staff.first_name} {staff.last_name}</td>
-                                    <td className="p-4 align-middle">
-                                        <div className="flex flex-col gap-1">
-                                            <span className={`inline-flex items-center w-fit rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent ${staff.category === 'Support Staff'
-                                                ? 'bg-blue-500/15 text-blue-700'
-                                                : 'bg-green-500/15 text-green-700'
-                                                }`}>
-                                                {staff.category || 'Teaching Staff'}
-                                            </span>
-                                            <span className="text-xs text-muted-foreground ml-1">{staff.designation}</span>
-                                        </div>
-                                    </td>
-                                    <td className="p-4 align-middle">
-                                        <div className="flex flex-col gap-1">
-                                            <span className="text-sm font-medium">{staff.employment_type || '-'}</span>
-                                            <span className={`text-xs ${staff.service_status === 'Active' ? 'text-green-600' : 'text-red-500'}`}>
-                                                {staff.service_status || 'Active'}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td className="p-4 align-middle">
-                                        <div className="flex flex-col text-xs text-muted-foreground">
-                                            {staff.email && <span className="mb-0.5">{staff.email}</span>}
-                                            <span>{staff.phone}</span>
-                                            <span>{staff.address}</span>
-                                        </div>
-                                    </td>
-                                    <td className="p-4 align-middle text-right">
-                                        <button onClick={() => handleEdit(staff)} className="text-primary hover:underline text-sm font-medium">Edit</button>
-                                    </td>
-                                </tr>
-                            ))}
-                            {filteredStaffs.length === 0 && (
-                                <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">No staff found.</td></tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            )}
+            {/* Search */}
+            <div className="relative w-full max-w-sm">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <input
+                    placeholder={`Search ${activeTab}...`}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-8 flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+            </div>
 
-            {isDialogOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                    <div className="bg-background rounded-lg shadow-lg w-full max-w-md p-6 animate-in fade-in zoom-in duration-200" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-semibold">{editingStaff ? 'Edit Staff' : 'Add New Staff'}</h3>
-                            <button onClick={() => setIsDialogOpen(false)} className="hover:bg-muted p-1 rounded-full"><X className="h-4 w-4" /></button>
+            {/* List */}
+            <div className="rounded-md border bg-card">
+                <div className="grid grid-cols-12 gap-4 p-4 border-b font-medium text-sm text-muted-foreground">
+                    <div className="col-span-4">Name</div>
+                    <div className="col-span-3">Role/Designation</div>
+                    <div className="col-span-3">Contact</div>
+                    <div className="col-span-2 text-right">Actions</div>
+                </div>
+                {filteredList.length > 0 ? filteredList.map((item: any) => (
+                    <div key={item.id} className="grid grid-cols-12 gap-4 p-4 border-b last:border-0 text-sm items-center hover:bg-muted/50 transition-colors">
+                        <div className="col-span-4 font-medium">{item.first_name} {item.last_name}</div>
+                        <div className="col-span-3">
+                            <div className="text-foreground">{item.designation}</div>
+                            <div className="text-xs text-muted-foreground">{item.category}</div>
                         </div>
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="col-span-3">
+                            <div>{item.email || '-'}</div>
+                            <div className="text-muted-foreground">{item.phone || item.mobile_number || '-'}</div>
+                        </div>
+                        <div className="col-span-2 flex justify-end gap-2">
+                            <button onClick={() => handleEdit(item)} className="p-2 hover:bg-muted rounded-md text-blue-600">
+                                <Pencil className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => handleDelete(item.id)} className="p-2 hover:bg-muted rounded-md text-red-600">
+                                <Trash2 className="h-4 w-4" />
+                            </button>
+                        </div>
+                    </div>
+                )) : (
+                    <div className="p-8 text-center text-muted-foreground">No records found.</div>
+                )}
+            </div>
+
+            {/* Modal */}
+            {isDialogOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-background rounded-lg shadow-lg w-full max-w-lg p-6 animate-in fade-in zoom-in duration-200">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-lg font-semibold">{editingId ? 'Edit' : 'Add'} {activeTab === 'teachers' ? 'Teacher' : 'Staff Member'}</h2>
+                            <button onClick={() => setIsDialogOpen(false)}><X className="h-5 w-5" /></button>
+                        </div>
+
+                        <form onSubmit={handleSave} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">First Name</label>
-                                    <input name="first_name" required defaultValue={editingStaff?.first_name} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                    <input required value={formData.first_name} onChange={e => setFormData({ ...formData, first_name: e.target.value })} className="flex h-10 w-full rounded-md border border-input px-3 py-2 text-sm" />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Last Name</label>
-                                    <input name="last_name" required defaultValue={editingStaff?.last_name} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                    <input required value={formData.last_name} onChange={e => setFormData({ ...formData, last_name: e.target.value })} className="flex h-10 w-full rounded-md border border-input px-3 py-2 text-sm" />
                                 </div>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Email <span className="text-muted-foreground text-xs">(Required for Teachers)</span></label>
-                                <input type="email" name="email" defaultValue={editingStaff?.email} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                <label className="text-sm font-medium">Designation</label>
+                                <input value={formData.designation} onChange={e => setFormData({ ...formData, designation: e.target.value })} className="flex h-10 w-full rounded-md border border-input px-3 py-2 text-sm" placeholder="e.g. Senior Teacher, Driver" />
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Mobile Number</label>
-                                <input type="tel" name="phone" required defaultValue={editingStaff?.phone} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                            <div className="grid grid-cols-2 gap-4">
+                                {activeTab === 'teachers' && (
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Email</label>
+                                        <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="flex h-10 w-full rounded-md border border-input px-3 py-2 text-sm" />
+                                    </div>
+                                )}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Phone / Mobile</label>
+                                    <input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="flex h-10 w-full rounded-md border border-input px-3 py-2 text-sm" />
+                                </div>
                             </div>
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Address</label>
-                                <input name="address" defaultValue={editingStaff?.address} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                <textarea value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} className="flex min-h-[60px] w-full rounded-md border border-input px-3 py-2 text-sm" />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Category</label>
-                                    <select name="category" required defaultValue={editingStaff?.category || 'Support Staff'} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                                        <option value="Teaching Staff">Teaching Staff</option>
-                                        <option value="Support Staff">Support Staff</option>
-                                    </select>
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Designation</label>
-                                    <select name="designation" required defaultValue={editingStaff?.designation} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                                        <option value="">Select Designation</option>
-                                        <optgroup label="Teaching">
-                                            <option value="Teacher">Teacher</option>
-                                            <option value="Head Teacher">Head Teacher</option>
-                                        </optgroup>
-                                        <optgroup label="Support">
-                                            <option value="Cook">Cook</option>
-                                            <option value="Helper">Helper</option>
-                                            <option value="Cleaner">Cleaner</option>
-                                            <option value="Driver">Driver</option>
-                                            <option value="Security">Security</option>
-                                        </optgroup>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Employment Type</label>
-                                    <select name="employment_type" required defaultValue={editingStaff?.employment_type} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                                        <option value="Permanent">Permanent</option>
-                                        <option value="Temporary">Temporary</option>
-                                        <option value="Contract">Contract</option>
-                                        <option value="Probation">Probation</option>
-                                        <option value="Part-time">Part-time</option>
-                                        <option value="Full-time">Full-time</option>
-                                        <option value="Substitute / Relief">Substitute / Relief</option>
-                                    </select>
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Service Status</label>
-                                    <select name="service_status" required defaultValue={editingStaff?.service_status} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                                        <option value="Active">Active</option>
-                                        <option value="Suspended">Suspended</option>
-                                        <option value="Resigned">Resigned</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end gap-2 mt-6">
-                                <button type="button" onClick={() => setIsDialogOpen(false)} className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground">Cancel</button>
-                                <button type="submit" className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90">{editingStaff ? 'Update Staff' : 'Create Staff'}</button>
+                            <div className="flex justify-end gap-2 pt-4">
+                                <button type="button" onClick={() => setIsDialogOpen(false)} className="px-4 py-2 text-sm font-medium border rounded-md hover:bg-accent">Cancel</button>
+                                <button type="submit" className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90">Save</button>
                             </div>
                         </form>
                     </div>
@@ -338,5 +273,4 @@ export default function StaffsPage() {
             )}
         </div>
     );
-
 }

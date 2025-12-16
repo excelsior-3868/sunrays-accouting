@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Loader2, DollarSign, CreditCard, TrendingUp, TrendingDown, Receipt, Calendar, CalendarDays, Users, UserCog, GraduationCap } from 'lucide-react';
-import { getInvoices, getPayments, getExpenses, getStudents, getTeachers, getStaffMembers } from '@/lib/api';
+import { Loader2, DollarSign, CreditCard, TrendingUp, TrendingDown, Receipt, Calendar, CalendarDays, Users, UserCog, GraduationCap, Shield } from 'lucide-react';
+import { getInvoices, getPayments, getExpenses, getStudents, getTeachers, getStaffMembers, getUsers } from '@/lib/api';
 
 
 export default function DashboardPage() {
@@ -15,19 +15,21 @@ export default function DashboardPage() {
         transactionsThisMonth: 0,
         totalStudents: 0,
         totalTeachers: 0,
-        totalSupportStaff: 0
+        totalSupportStaff: 0,
+        totalUsers: 0
     });
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [invData, payData, expData, studentsData, teachersData, staffData] = await Promise.all([
+                const [invData, payData, expData, studentsData, teachersData, staffData, usersCount] = await Promise.all([
                     getInvoices(),
                     getPayments(),
                     getExpenses(),
                     getStudents().catch(() => []),
                     getTeachers().catch(() => []),
-                    getStaffMembers().catch(() => [])
+                    getStaffMembers().catch(() => []),
+                    getUsers().catch(() => 0)
                 ]);
 
                 // Calculate Totals
@@ -92,7 +94,8 @@ export default function DashboardPage() {
                     transactionsThisMonth,
                     totalStudents: studentsData.length,
                     totalTeachers: teachersData.length,
-                    totalSupportStaff: supportStaffCount
+                    totalSupportStaff: supportStaffCount,
+                    totalUsers: usersCount || 0
                 });
 
             } catch (error) {
@@ -216,6 +219,13 @@ export default function DashboardPage() {
                             icon={<UserCog className="h-5 w-5" />}
                             color="text-orange-600"
                             bgColor="bg-orange-50"
+                        />
+                        <InfoCard
+                            title="System Users"
+                            value={stats.totalUsers}
+                            icon={<Shield className="h-5 w-5" />}
+                            color="text-teal-600"
+                            bgColor="bg-teal-50"
                         />
                     </div>
                 </div>

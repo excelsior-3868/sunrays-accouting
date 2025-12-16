@@ -3,10 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, ArrowLeft, CreditCard, Printer } from 'lucide-react';
 import { getInvoiceById, recordPayment, getFiscalYears, getGLHeads, getStudentUnpaidStats } from '@/lib/api';
 import { type Invoice, type FiscalYear, type GLHead } from '@/types';
+import { usePermission } from '@/hooks/usePermission';
 
 export default function InvoiceDetailsPage() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { can } = usePermission();
     const [invoice, setInvoice] = useState<Invoice | null>(null);
     const [loading, setLoading] = useState(true);
     const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
@@ -49,7 +51,7 @@ export default function InvoiceDetailsPage() {
 
     const handlePayment = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!invoice) return;
+        if (!invoice || !can('invoices.create')) return;
 
         const formData = new FormData(e.currentTarget);
         const payment = {
@@ -122,7 +124,7 @@ export default function InvoiceDetailsPage() {
                 <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
                     <h3 className="font-semibold mb-4 flex justify-between items-center">
                         <div>Summary</div>
-                        {invoice.status !== 'Paid' && (
+                        {invoice.status !== 'Paid' && can('invoices.create') && (
                             <button onClick={() => setIsPaymentDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-green-600 text-white hover:bg-green-700 h-8 px-3">
                                 <CreditCard className="mr-2 h-3.5 w-3.5" /> Record Payment
                             </button>

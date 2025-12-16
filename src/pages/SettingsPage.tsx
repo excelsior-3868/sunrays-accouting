@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Plus, Loader2, Pencil, CheckCircle } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 import { getFiscalYears, createFiscalYear, setActiveFiscalYear } from '@/lib/api';
 import { type FiscalYear } from '@/types';
 
 
 export default function SettingsPage() {
     const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([]);
+    const { toast } = useToast();
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingYear, setEditingYear] = useState<FiscalYear | null>(null);
@@ -39,7 +41,7 @@ export default function SettingsPage() {
             if (editingYear) {
                 // Update
                 await import('@/lib/api').then(m => m.updateFiscalYear(editingYear.id, yearData));
-                alert('Fiscal Year updated successfully');
+                toast({ title: "Success", description: "Fiscal Year updated successfully" });
             } else {
                 // Create
                 await createFiscalYear({
@@ -47,14 +49,14 @@ export default function SettingsPage() {
                     is_active: false,
                     is_closed: false,
                 });
-                alert('Fiscal Year created successfully');
+                toast({ title: "Success", description: "Fiscal Year created successfully" });
             }
             setIsDialogOpen(false);
             setEditingYear(null);
             fetchYears();
         } catch (error) {
             console.error('Error saving fiscal year:', error);
-            alert('Failed to save fiscal year.');
+            toast({ variant: "destructive", title: "Error", description: "Failed to save fiscal year." });
         }
     };
 
