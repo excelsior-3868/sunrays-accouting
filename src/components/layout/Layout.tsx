@@ -59,6 +59,7 @@ export default function Layout() {
                         <div className="my-2 border-t border-border" />
 
                         <NavItem to="/users" icon={<Users className="h-4 w-4 text-cyan-600" />} label="Users" />
+                        <NavItem to="/roles" icon={<Key className="h-4 w-4 text-emerald-600" />} label="Roles" />
 
                         <div className="my-2 border-t border-border" />
 

@@ -191,3 +191,21 @@ export type Staff = {
     service_status?: string;
     created_at?: string;
 };
+
+/* Roles & Permissions */
+
+export type Permission = {
+    id: string;
+    slug: string;
+    description?: string;
+    created_at?: string;
+};
+
+export type Role = {
+    id: string;
+    name: string;
+    description?: string;
+    created_at?: string;
+    permissions?: Permission[];
+};
+

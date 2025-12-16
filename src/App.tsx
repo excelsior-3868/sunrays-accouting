@@ -17,6 +17,9 @@ import StudentsPage from '@/pages/StudentsPage';
 import TeachersPage from '@/pages/TeachersPage';
 import StaffsPage from '@/pages/StaffsPage';
 import UsersPage from '@/pages/UsersPage';
+import RolesPage from '@/pages/RolesPage';
+
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 function App() {
   return (
@@ -33,16 +36,44 @@ function App() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/chart-of-accounts" element={<ChartOfAccountsPage />} />
             <Route path="/fee-structures" element={<FeeStructuresPage />} />
-            <Route path="/invoices" element={<InvoicesPage />} />
-            <Route path="/invoices/:id" element={<InvoiceDetailsPage />} />
+
+            <Route path="/invoices" element={
+              <ProtectedRoute requiredPermission="invoices.view">
+                <InvoicesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/invoices/:id" element={
+              <ProtectedRoute requiredPermission="invoices.view">
+                <InvoiceDetailsPage />
+              </ProtectedRoute>
+            } />
+
             <Route path="/expenses" element={<ExpensesPage />} />
             <Route path="/salary-structures" element={<SalaryStructuresPage />} />
             <Route path="/settings/staffs" element={<StaffsPage />} />
-            <Route path="/payroll" element={<PayrollPage />} />
+
+            <Route path="/payroll" element={
+              <ProtectedRoute requiredPermission="payroll.view">
+                <PayrollPage />
+              </ProtectedRoute>
+            } />
+
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/students" element={<StudentsPage />} />
             <Route path="/teachers" element={<TeachersPage />} />
-            <Route path="/users" element={<UsersPage />} />
+
+            <Route path="/users" element={
+              <ProtectedRoute requiredPermission="users.view">
+                <UsersPage />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/roles" element={
+              <ProtectedRoute requiredPermission="roles.view">
+                <RolesPage />
+              </ProtectedRoute>
+            } />
+
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

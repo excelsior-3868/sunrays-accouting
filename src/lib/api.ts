@@ -651,3 +651,150 @@ export const updateGLHead = async (id: string, updates: Partial<GLHead>) => {
     if (error) throw error;
     return data as GLHead;
 };
+
+/* -------------------------------------------------------------------------- */
+/*                               Roles & Permissions                          */
+/* -------------------------------------------------------------------------- */
+
+export const getRoles = async () => {
+    // 1. Fetch Roles
+    console.log('API: getRoles called');
+    const { data: roles, error: rolesError } = await supabase
+        .from('roles')
+        .select('*')
+        .order('name');
+
+    if (rolesError) {
+        console.error('API: getRoles error fetching roles', rolesError);
+        throw rolesError;
+    }
+    console.log('API: getRoles fetched raw roles:', roles);
+
+    // 2. Fetch all Role Permissions
+    const { data: rolePerms, error: permsError } = await supabase
+        .from('role_permissions')
+        .select(`
+            role_id,
+            permission:permissions (
+                *
+            )
+        `);
+
+    if (permsError) throw permsError;
+
+    // 3. Map permissions to roles
+    const rolesWithPermissions = roles.map(role => {
+        const myPerms = rolePerms
+            .filter((rp: any) => rp.role_id === role.id)
+            .map((rp: any) => rp.permission)
+            .filter(Boolean);
+
+        return {
+            ...role,
+            permissions: myPerms
+        };
+    });
+
+    return rolesWithPermissions as import('../types').Role[];
+};
+
+export const getPermissions = async () => {
+    const { data, error } = await supabase
+        .from('permissions')
+        .select('*')
+        .order('slug');
+
+    if (error) throw error;
+    return data as import('../types').Permission[];
+};
+
+export const createRole = async (
+    role: { name: string; description: string },
+    permissionIds: string[]
+) => {
+    const { data: roleData, error: roleError } = await supabase
+        .from('roles')
+        .insert([role])
+        .select()
+        .single();
+
+    if (roleError) throw roleError;
+
+    if (permissionIds.length > 0) {
+        const rolePermissions = permissionIds.map(permId => ({
+            role_id: roleData.id,
+            permission_id: permId
+        }));
+
+        const { error: permError } = await supabase
+            .from('role_permissions')
+            .insert(rolePermissions);
+
+        if (permError) throw permError;
+    }
+
+    return roleData;
+};
+
+export const updateRole = async (
+    id: string,
+    updates: { name?: string; description?: string },
+    permissionIds?: string[]
+) => {
+    // 1. Update Role Details
+    // 1. Update Role Details
+    const { data: roleData, error: roleError } = await supabase
+        .from('roles')
+        .update(updates)
+        .eq('id', id)
+        .select();
+
+    if (roleError) throw roleError;
+    const updatedRole = roleData && roleData.length > 0 ? roleData[0] : null;
+
+    if (!updatedRole) {
+        // If no row returned, it might be RLS or invalid ID. 
+        // But we can proceed to update permissions if we assume the user just has no visibility?
+        // Actually if we can't see it, we probably failed to update it or it doesn't exist.
+        // Let's assume success if no error, but return null or throw?
+        // Throwing might be better to debug.
+        throw new Error("Failed to update role or retrieve updated record (check permissions).");
+    }
+
+    // 2. Update Permissions if provided
+    if (permissionIds) {
+        // Delete existing
+        const { error: delError } = await supabase
+            .from('role_permissions')
+            .delete()
+            .eq('role_id', id);
+
+        if (delError) throw delError;
+
+        // Insert new
+        if (permissionIds.length > 0) {
+            const rolePermissions = permissionIds.map(permId => ({
+                role_id: id,
+                permission_id: permId
+            }));
+
+            const { error: insError } = await supabase
+                .from('role_permissions')
+                .insert(rolePermissions);
+
+            if (insError) throw insError;
+        }
+    }
+
+    return updatedRole;
+};
+
+export const deleteRole = async (id: string) => {
+    const { error } = await supabase
+        .from('roles')
+        .delete()
+        .eq('id', id);
+
+    if (error) throw error;
+};
+
