@@ -28,7 +28,6 @@ export default function ExpensesPage() {
 
     // Form Data
     const [expenseHeads, setExpenseHeads] = useState<GLHead[]>([]);
-    const [assetHeads, setAssetHeads] = useState<GLHead[]>([]);
     const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([]);
 
     // Filters
@@ -47,7 +46,6 @@ export default function ExpensesPage() {
             ]);
             setExpenses(expData);
             setExpenseHeads(glData.filter(h => h.type === 'Expense'));
-            setAssetHeads(glData.filter(h => h.type === 'Asset'));
             setFiscalYears(fyData.filter(fy => fy.is_active));
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -132,8 +130,6 @@ export default function ExpensesPage() {
         if (a.group === b.group) return a.label.localeCompare(b.label);
         return a.group.localeCompare(b.group);
     });
-
-    const assetOptions = getOptionsFromHeads(assetHeads);
 
     const filteredExpenses = expenses.filter(exp =>
         selectedHeadFilter ? exp.expense_head_id === selectedHeadFilter : true
