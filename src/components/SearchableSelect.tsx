@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronDown, Check, X, Search } from 'lucide-react';
+import { ChevronDown, Check, Search } from 'lucide-react';
 
 interface Option {
     value: string;

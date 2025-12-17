@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { getExpenses, getStaffMembers, getTeachers, getFiscalYears } from '@/lib/api';
 import { Loader2, Search, X, Filter } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { toNepali } from '@/lib/nepaliDate';
 import { type FiscalYear } from '@/types';
 
 type LedgerEntry = {
@@ -235,7 +236,8 @@ export default function StaffLedgerReport() {
                     <table className="w-full caption-bottom text-sm">
                         <thead className="[&_tr]:border-b">
                             <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
-                                <th className="h-12 px-4 text-left align-middle font-medium">Date</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Date(BS)</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Date(AD)</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium">Description</th>
                                 <th className="h-12 px-4 text-right align-middle font-medium">Amount Paid</th>
                             </tr>
@@ -243,13 +245,14 @@ export default function StaffLedgerReport() {
                         <tbody>
                             {ledger.map((entry) => (
                                 <tr key={entry.id} className="border-b transition-colors hover:bg-muted/50">
-                                    <td className="p-4 align-middle">{formatDate(entry.date)}</td>
+                                    <td className="p-4 align-middle font-medium whitespace-nowrap">{toNepali(entry.date)}</td>
+                                    <td className="p-4 align-middle text-muted-foreground whitespace-nowrap">{formatDate(entry.date)}</td>
                                     <td className="p-4 align-middle">{entry.description}</td>
                                     <td className="p-4 align-middle text-right font-medium">{entry.amount.toLocaleString()}</td>
                                 </tr>
                             ))}
                             <tr className="bg-muted/50 font-bold border-t">
-                                <td colSpan={2} className="p-4 text-right">Total Paid</td>
+                                <td colSpan={3} className="p-4 text-right">Total Paid</td>
                                 <td className="p-4 text-right text-green-600">{totalPaid.toLocaleString()}</td>
                             </tr>
                         </tbody>

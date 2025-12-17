@@ -1,7 +1,37 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Loader2, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+
+
+function AnimatedBackground({ children }: { children: ReactNode }) {
+    return (
+        <div className="flex min-h-screen items-center justify-center p-4 relative overflow-hidden bg-gray-50">
+            <style>{`
+                @keyframes gradientBG {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                }
+                .animated-bg {
+                    background: linear-gradient(-45deg, #eff6ff, #faf5ff, #f0fdf4, #fff7ed);
+                    background-size: 400% 400%;
+                    animation: gradientBG 15s ease infinite;
+                }
+            `}</style>
+            <div className="absolute inset-0 animated-bg -z-10" />
+
+            {/* Animated Blobs */}
+            <div className="absolute inset-0 overflow-hidden -z-10 pointer-events-none">
+                <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-400/20 blur-[100px] animate-pulse" />
+                <div className="absolute top-[30%] -right-[10%] w-[40%] h-[40%] rounded-full bg-purple-400/20 blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
+                <div className="absolute -bottom-[10%] left-[20%] w-[40%] h-[40%] rounded-full bg-teal-400/20 blur-[100px] animate-pulse" style={{ animationDelay: '4s' }} />
+            </div>
+
+            {children}
+        </div>
+    );
+}
 
 export default function LoginPage() {
     const [loading, setLoading] = useState(false);
@@ -53,8 +83,8 @@ export default function LoginPage() {
 
     if (isForgotPassword) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-                <div className="w-full max-w-sm overflow-hidden rounded-lg border bg-background shadow-lg">
+            <AnimatedBackground>
+                <div className="w-full max-w-sm overflow-hidden rounded-xl border bg-background/80 backdrop-blur-md shadow-2xl">
                     <div className="flex flex-col items-center gap-2 p-6 text-center">
                         <div className="flex h-24 w-24 items-center justify-center -mb-2">
                             <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
@@ -109,13 +139,13 @@ export default function LoginPage() {
                         </div>
                     </div>
                 </div>
-            </div>
+            </AnimatedBackground>
         );
     }
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-            <div className="w-full max-w-sm overflow-hidden rounded-lg border bg-background shadow-lg">
+        <AnimatedBackground>
+            <div className="w-full max-w-sm overflow-hidden rounded-xl border bg-background/80 backdrop-blur-md shadow-2xl">
                 <div className="flex flex-col items-center gap-2 p-6 text-center">
                     <div className="flex h-24 w-24 items-center justify-center -mb-2">
                         <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
@@ -185,6 +215,6 @@ export default function LoginPage() {
                     </form>
                 </div>
             </div>
-        </div>
+        </AnimatedBackground>
     );
 }

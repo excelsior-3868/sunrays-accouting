@@ -52,22 +52,45 @@ export default function SettingsPage() {
             name: formData.get('name') as string,
             start_date: editingYear ? editingYear.start_date : yearDataState.start_date, // Handle state vs form data mismatch if needed
             end_date: editingYear ? editingYear.end_date : yearDataState.end_date,
+            opening_balance: Number(formData.get('opening_balance')) || 0,
         };
         // Note: For simplicity in this refactor, we should bind inputs to state to ensure we capture the date picker values.
         // Let's refactor the form handling below slightly to use state for the dates.
 
+        const isActive = formData.get('is_active') === 'true';
+
         try {
+            if (isActive) {
+                // Deactivate others if setting this one to active
+                await setActiveFiscalYear('00000000-0000-0000-0000-000000000000'); // Dummy call to reset others first -> actually setActiveFiscalYear logic handles it but lets look at api.
+                // The api setActiveFiscalYear(id) sets id to true and others to false.
+                // But here we are creating/updating.
+                // If we are setting is_active=true, we should probably use setActiveFiscalYear logic OR update all others to false manually.
+                // Let's rely on the fact that if we save this as active, we should probably trigger the "Set Active" logic.
+            }
+
             if (editingYear) {
                 // Update
-                await import('@/lib/api').then(m => m.updateFiscalYear(editingYear.id, yearData));
+                if (isActive) {
+                    // If marking active during update, we should ensure others are deactivated using the specific API which handles this transactionally or safely
+                    await setActiveFiscalYear(editingYear.id);
+                    await import('@/lib/api').then(m => m.updateFiscalYear(editingYear.id, { ...yearData, is_active: true }));
+                } else {
+                    await import('@/lib/api').then(m => m.updateFiscalYear(editingYear.id, { ...yearData, is_active: false }));
+                }
                 toast({ title: "Success", description: "Fiscal Year updated successfully" });
             } else {
                 // Create
-                await createFiscalYear({
+                const newFy = await createFiscalYear({
                     ...yearData,
-                    is_active: false,
+                    is_active: isActive,
                     is_closed: false,
                 });
+
+                if (isActive) {
+                    await setActiveFiscalYear(newFy.id);
+                }
+
                 toast({ title: "Success", description: "Fiscal Year created successfully" });
             }
             setIsDialogOpen(false);
@@ -177,6 +200,16 @@ export default function SettingsPage() {
                                 <label className="text-sm font-medium">Name (e.g. 2080-2081)</label>
                                 <input name="name" required defaultValue={editingYear?.name} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
                             </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Opening Balance</label>
+                                <input
+                                    type="number"
+                                    name="opening_balance"
+                                    placeholder="0"
+                                    defaultValue={editingYear?.opening_balance || 0}
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                />
+                            </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Start Date (BS)</label>
@@ -194,6 +227,17 @@ export default function SettingsPage() {
                                     />
                                     <input type="hidden" name="end_date" value={yearDataState.end_date} />
                                 </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Status</label>
+                                <select
+                                    name="is_active"
+                                    defaultValue={editingYear?.is_active ? 'true' : 'false'}
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                >
+                                    <option value="false">Inactive</option>
+                                    <option value="true">Active</option>
+                                </select>
                             </div>
                             <div className="flex justify-end gap-2 mt-6">
                                 <button type="button" onClick={() => setIsDialogOpen(false)} className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground">Cancel</button>

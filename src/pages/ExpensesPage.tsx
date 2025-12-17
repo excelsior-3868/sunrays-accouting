@@ -63,7 +63,7 @@ export default function ExpensesPage() {
     const [newExpenseState, setNewExpenseState] = useState({
         fiscal_year_id: '',
         expense_head_id: '',
-        payment_mode_gl_id: '',
+        payment_method: '',
         amount: '',
         expense_date: new Date().toISOString().split('T')[0],
         description: ''
@@ -78,10 +78,16 @@ export default function ExpensesPage() {
 
     const handleConfirmPost = async () => {
         try {
+            const activeFyId = fiscalYears.find(fy => fy.is_active)?.id;
+            if (!activeFyId) {
+                toast({ variant: "destructive", title: "Error", description: "No active fiscal year found." });
+                return;
+            }
+
             await createExpense({
-                fiscal_year_id: newExpenseState.fiscal_year_id,
+                fiscal_year_id: activeFyId,
                 expense_head_id: newExpenseState.expense_head_id,
-                payment_mode_gl_id: newExpenseState.payment_mode_gl_id,
+                payment_method: newExpenseState.payment_method,
                 amount: Number(newExpenseState.amount),
                 expense_date: newExpenseState.expense_date,
                 description: newExpenseState.description,
@@ -214,7 +220,7 @@ export default function ExpensesPage() {
                                     <td className="p-4 align-middle text-muted-foreground">{new Date(exp.expense_date).toLocaleDateString('en-GB')}</td>
                                     <td className="p-4 align-middle font-medium">{exp.expense_head?.name}</td>
                                     <td className="p-4 align-middle">{exp.description}</td>
-                                    <td className="p-4 align-middle">{exp.payment_mode?.name}</td>
+                                    <td className="p-4 align-middle">{exp.payment_method || exp.payment_mode?.name}</td>
                                     <td className="p-4 align-middle text-right font-semibold">NPR {exp.amount.toLocaleString()}</td>
                                 </tr>
                             ))}
@@ -257,8 +263,8 @@ export default function ExpensesPage() {
                                         <button
                                             onClick={() => setCurrentPage(page)}
                                             className={`inline-flex items-center justify-center h-8 w-8 rounded border ${currentPage === page
-                                                    ? 'bg-primary text-primary-foreground'
-                                                    : 'bg-background hover:bg-accent'
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'bg-background hover:bg-accent'
                                                 }`}
                                         >
                                             {page}
@@ -285,18 +291,13 @@ export default function ExpensesPage() {
                         <form onSubmit={handleCreate} className="space-y-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Fiscal Year</label>
-                                <select
-                                    name="fiscal_year_id"
-                                    required
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                    value={newExpenseState.fiscal_year_id}
-                                    onChange={e => setNewExpenseState({ ...newExpenseState, fiscal_year_id: e.target.value })}
-                                >
-                                    <option value="">Select FY</option>
-                                    {fiscalYears.map(fy => (
-                                        <option key={fy.id} value={fy.id}>{fy.name}</option>
-                                    ))}
-                                </select>
+                                <input
+                                    type="text"
+                                    disabled
+                                    className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm opacity-100" // opacity-100 to ensure readability
+                                    value={fiscalYears.find(fy => fy.is_active)?.name || 'No Active FY'}
+                                />
+                                <input type="hidden" name="fiscal_year_id" value={fiscalYears.find(fy => fy.is_active)?.id || ''} />
                             </div>
 
                             <div className="space-y-2">
@@ -334,12 +335,18 @@ export default function ExpensesPage() {
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Payment Mode (Paid From)</label>
                                 <SearchableSelect
-                                    options={assetOptions}
-                                    value={newExpenseState.payment_mode_gl_id}
-                                    onChange={(val) => setNewExpenseState({ ...newExpenseState, payment_mode_gl_id: val })}
-                                    placeholder="Select Asset (Cash/Bank)..."
+                                    options={[
+                                        { value: 'Cash in Hand', label: 'Cash in Hand', group: 'Methods' },
+                                        { value: 'Petty Cash', label: 'Petty Cash', group: 'Methods' },
+                                        { value: 'Bank Account', label: 'Bank Account', group: 'Methods' },
+                                        { value: 'Digital Payment', label: 'Digital Payment', group: 'Methods' },
+                                        { value: 'Cheque', label: 'Cheque', group: 'Methods' },
+                                    ]}
+                                    value={newExpenseState.payment_method}
+                                    onChange={(val) => setNewExpenseState({ ...newExpenseState, payment_method: val })}
+                                    placeholder="Select Payment Mode..."
                                 />
-                                <input type="hidden" name="payment_mode_gl_id" value={newExpenseState.payment_mode_gl_id} required />
+                                <input type="hidden" name="payment_method" value={newExpenseState.payment_method} required />
                             </div>
 
                             <div className="space-y-2">
@@ -383,7 +390,7 @@ export default function ExpensesPage() {
                         <div className="grid grid-cols-3 gap-2">
                             <span className="font-semibold text-muted-foreground">Paid Via:</span>
                             <span className="col-span-2">
-                                {assetHeads.find(h => h.id === newExpenseState.payment_mode_gl_id)?.name || 'Unknown'}
+                                {newExpenseState.payment_method || 'Unknown'}
                             </span>
                         </div>
                         <div className="grid grid-cols-3 gap-2">

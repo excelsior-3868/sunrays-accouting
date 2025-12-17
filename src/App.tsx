@@ -21,6 +21,7 @@ import ProfitLossReport from '@/pages/reports/ProfitLossReport';
 import CashFlowReport from '@/pages/reports/CashFlowReport';
 import SalarySheetReport from '@/pages/reports/SalarySheetReport';
 import StaffLedgerReport from '@/pages/reports/StaffLedgerReport';
+import GLHeadReport from '@/pages/reports/GLHeadReport';
 import StudentsPage from '@/pages/StudentsPage';
 import TeachersPage from '@/pages/TeachersPage';
 import StaffsPage from '@/pages/StaffsPage';
@@ -75,6 +76,7 @@ function App() {
             <Route path="/reports/cash-flow" element={<CashFlowReport />} />
             <Route path="/reports/salary-sheet" element={<SalarySheetReport />} />
             <Route path="/reports/staff-ledger" element={<StaffLedgerReport />} />
+            <Route path="/reports/gl-head" element={<GLHeadReport />} />
             <Route path="/students" element={<StudentsPage />} />
             <Route path="/teachers" element={<TeachersPage />} />
 

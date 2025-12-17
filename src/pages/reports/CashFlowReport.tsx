@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getExpenses, getPayments } from '@/lib/api';
 import { Loader2, DollarSign, ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { toNepali } from '@/lib/nepaliDate';
 
 export default function CashFlowReport() {
     const [loading, setLoading] = useState(true);
@@ -107,7 +108,8 @@ export default function CashFlowReport() {
                     <table className="w-full caption-bottom text-sm">
                         <thead className="[&_tr]:border-b sticky top-0 bg-secondary/90 backdrop-blur-sm">
                             <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
-                                <th className="h-10 px-4 text-left align-middle font-medium">Date</th>
+                                <th className="h-10 px-4 text-left align-middle font-medium">Date(BS)</th>
+                                <th className="h-10 px-4 text-left align-middle font-medium">Date(AD)</th>
                                 <th className="h-10 px-4 text-left align-middle font-medium">Description</th>
                                 <th className="h-10 px-4 text-left align-middle font-medium">Type</th>
                                 <th className="h-10 px-4 text-right align-middle font-medium">Amount</th>
@@ -118,7 +120,8 @@ export default function CashFlowReport() {
                                 .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                                 .map((item) => (
                                     <tr key={item.id} className="border-b transition-colors hover:bg-muted/50">
-                                        <td className="p-4 align-middle">{item.date}</td>
+                                        <td className="p-4 align-middle font-medium whitespace-nowrap">{toNepali(item.date)}</td>
+                                        <td className="p-4 align-middle text-muted-foreground whitespace-nowrap">{item.date}</td>
                                         <td className="p-4 align-middle">{item.description}</td>
                                         <td className="p-4 align-middle">
                                             <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors border-transparent ${item.type === 'Income' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
@@ -132,7 +135,7 @@ export default function CashFlowReport() {
                                     </tr>
                                 ))}
                             {[...inflows, ...outflows].length === 0 && (
-                                <tr><td colSpan={4} className="p-4 text-center text-muted-foreground">No transactions recorded.</td></tr>
+                                <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">No transactions recorded.</td></tr>
                             )}
                         </tbody>
                     </table>

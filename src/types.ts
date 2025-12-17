@@ -5,6 +5,7 @@ export type FiscalYear = {
     end_date: string;
     is_active: boolean;
     is_closed: boolean;
+    opening_balance?: number;
     created_at?: string;
     updated_at?: string;
 };
@@ -93,7 +94,8 @@ export type Expense = {
     id: string;
     fiscal_year_id: string;
     expense_head_id: string;
-    payment_mode_gl_id: string;
+    payment_mode_gl_id?: string;
+    payment_method?: string; // Hardcoded method name
     amount: number;
     expense_date: string;
     description?: string;

@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getInvoices, getPayments, getStudents, getFiscalYears } from '@/lib/api';
-import { Loader2, Search, X } from 'lucide-react';
+import { Loader2, Search, X, ListFilter } from 'lucide-react';
 import { toNepali } from '@/lib/nepaliDate';
 import { type FiscalYear } from '@/types';
 
@@ -16,7 +16,7 @@ type LedgerEntry = {
 };
 
 export default function StudentLedgerReport() {
-    const [loading, setLoading] = useState(false);
+    const [, setLoading] = useState(false);
     const [students, setStudents] = useState<any[]>([]);
     const [selectedStudentId, setSelectedStudentId] = useState('');
     const [ledger, setLedger] = useState<LedgerEntry[]>([]);
@@ -191,72 +191,72 @@ export default function StudentLedgerReport() {
         <div className="space-y-6">
             <h1 className="text-2xl font-bold tracking-tight">Student Ledger</h1>
 
-            <div className="flex items-end gap-4 bg-card p-4 rounded-lg border flex-wrap">
-                <div className="space-y-2">
-                    <label className="text-sm font-medium">Fiscal Year</label>
-                    <select
-                        value={selectedFyId}
-                        onChange={(e) => setSelectedFyId(e.target.value)}
-                        className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm w-[200px]"
-                    >
-                        <option value="">All Time</option>
-                        {fiscalYears.map(fy => (
-                            <option key={fy.id} value={fy.id}>{fy.name}</option>
-                        ))}
-                    </select>
+            <div className="flex items-center gap-4 rounded-lg border bg-card p-4 shadow-sm">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <ListFilter className="h-4 w-4" />
+                    Filters:
                 </div>
-                <div className="w-full max-w-[500px] relative">
-                    <label className="text-sm font-medium mb-2 block">Select Student</label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Search className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                        <input
-                            type="text"
-                            placeholder="Search by name or ID..."
-                            className="pl-10 pr-8 h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                            value={searchQuery}
-                            onChange={(e) => {
-                                setSearchQuery(e.target.value);
-                                if (selectedStudentId) {
-                                    setSelectedStudentId(''); // Reset selection if user types
-                                }
-                            }}
-                            onFocus={() => setIsSearchFocused(true)}
-                            onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                            onKeyDown={(e) => {
-                                if (!isSearchFocused) return;
-                                const options = filteredStudentSearchList;
 
-                                if (e.key === 'ArrowDown') {
-                                    e.preventDefault();
-                                    setFocusedIndex(prev => (prev < options.length - 1 ? prev + 1 : prev));
-                                } else if (e.key === 'ArrowUp') {
-                                    e.preventDefault();
-                                    setFocusedIndex(prev => (prev > 0 ? prev - 1 : 0));
-                                } else if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    if (focusedIndex >= 0 && focusedIndex < options.length) {
-                                        const selected = options[focusedIndex];
-                                        setSearchQuery(selected.name);
-                                        setSelectedStudentId(selected.id);
-                                        setIsSearchFocused(false);
-                                    }
-                                }
-                            }}
-                        />
-                        {searchQuery && (
-                            <button
-                                onClick={() => {
-                                    setSearchQuery('');
-                                    setSelectedStudentId('');
-                                }}
-                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
-                            >
-                                <X className="h-4 w-4" />
-                            </button>
-                        )}
+                <select
+                    value={selectedFyId}
+                    onChange={(e) => setSelectedFyId(e.target.value)}
+                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring w-[140px]"
+                >
+                    <option value="">All Time</option>
+                    {fiscalYears.map(fy => (
+                        <option key={fy.id} value={fy.id}>{fy.name}</option>
+                    ))}
+                </select>
+
+                <div className="relative flex-1 max-w-md">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search className="h-4 w-4 text-muted-foreground" />
                     </div>
+                    <input
+                        type="text"
+                        placeholder="Search Student..."
+                        className="pl-9 pr-8 h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        value={searchQuery}
+                        onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            if (selectedStudentId) {
+                                setSelectedStudentId(''); // Reset selection if user types
+                            }
+                        }}
+                        onFocus={() => setIsSearchFocused(true)}
+                        onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                        onKeyDown={(e) => {
+                            if (!isSearchFocused) return;
+                            const options = filteredStudentSearchList;
+
+                            if (e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                setFocusedIndex(prev => (prev < options.length - 1 ? prev + 1 : prev));
+                            } else if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                setFocusedIndex(prev => (prev > 0 ? prev - 1 : 0));
+                            } else if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (focusedIndex >= 0 && focusedIndex < options.length) {
+                                    const selected = options[focusedIndex];
+                                    setSearchQuery(selected.name);
+                                    setSelectedStudentId(selected.id);
+                                    setIsSearchFocused(false);
+                                }
+                            }
+                        }}
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={() => {
+                                setSearchQuery('');
+                                setSelectedStudentId('');
+                            }}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    )}
 
                     {isSearchFocused && (searchQuery || filteredStudentSearchList.length > 0) && (
                         <div className="absolute z-50 mt-1 w-full bg-popover text-popover-foreground rounded-md border shadow-md animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
@@ -291,7 +291,8 @@ export default function StudentLedgerReport() {
                     <table className="w-full caption-bottom text-sm">
                         <thead className="[&_tr]:border-b">
                             <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
-                                <th className="h-12 px-4 text-left align-middle font-medium">Date</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Date(BS)</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Date(AD)</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium">Particulars</th>
                                 <th className="h-12 px-4 text-right align-middle font-medium">Debit (Due)</th>
                                 <th className="h-12 px-4 text-right align-middle font-medium">Credit (Paid)</th>
@@ -301,7 +302,8 @@ export default function StudentLedgerReport() {
                         <tbody>
                             {ledger.map((entry) => (
                                 <tr key={entry.id} className="border-b transition-colors hover:bg-muted/50">
-                                    <td className="p-4 align-middle">{toNepali(entry.date)}</td>
+                                    <td className="p-4 align-middle font-medium whitespace-nowrap">{toNepali(entry.date)}</td>
+                                    <td className="p-4 align-middle text-muted-foreground whitespace-nowrap">{entry.date}</td>
                                     <td className="p-4 align-middle">{entry.particulars}</td>
                                     <td className="p-4 align-middle text-right text-red-600">{entry.debit ? entry.debit.toLocaleString() : '-'}</td>
                                     <td className="p-4 align-middle text-right text-green-600">{entry.credit ? entry.credit.toLocaleString() : '-'}</td>
@@ -309,7 +311,7 @@ export default function StudentLedgerReport() {
                                 </tr>
                             ))}
                             <tr className="bg-muted/50 font-bold">
-                                <td colSpan={4} className="p-4 text-right">Closing Balance</td>
+                                <td colSpan={5} className="p-4 text-right">Closing Balance</td>
                                 <td className="p-4 text-right">{ledger[ledger.length - 1]?.balance.toLocaleString()}</td>
                             </tr>
                         </tbody>

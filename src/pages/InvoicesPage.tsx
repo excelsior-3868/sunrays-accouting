@@ -436,7 +436,8 @@ export default function InvoicesPage() {
                                 <th className="h-12 px-4 text-left align-middle font-medium">Student</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium">Class</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium">Month</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Date</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Date(BS)</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Date(AD)</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium">Amount</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium">Status</th>
                             </tr>
@@ -461,7 +462,8 @@ export default function InvoicesPage() {
                                         </span>
                                     </td>
                                     <td className="p-4 align-middle">{inv.month || '-'}</td>
-                                    <td className="p-4 align-middle">{toNepali(inv.created_at?.split('T')[0])}</td>
+                                    <td className="p-4 align-middle font-medium whitespace-nowrap">{toNepali(inv.created_at?.split('T')[0])}</td>
+                                    <td className="p-4 align-middle text-muted-foreground whitespace-nowrap">{inv.created_at?.split('T')[0]}</td>
                                     <td className="p-4 align-middle">NPR {inv.total_amount}</td>
                                     <td className="p-4 align-middle">
                                         <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent ${inv.status === 'Paid' ? 'bg-green-500/15 text-green-700' :
@@ -474,7 +476,7 @@ export default function InvoicesPage() {
                                 </tr>
                             ))}
                             {paginatedInvoices.length === 0 && (
-                                <tr><td colSpan={7} className="p-4 text-center text-muted-foreground">No invoices found.</td></tr>
+                                <tr><td colSpan={8} className="p-4 text-center text-muted-foreground">No invoices found.</td></tr>
                             )}
                         </tbody>
                     </table>

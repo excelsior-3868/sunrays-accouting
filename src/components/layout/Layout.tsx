@@ -17,7 +17,8 @@ import {
     DollarSign,
     Users,
     LogOut,
-    Key
+    Key,
+    PieChart
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -77,6 +78,7 @@ export default function Layout() {
 
                             {isReportsOpen && (
                                 <div className="space-y-1 pl-4">
+                                    <NavItem to="/reports/gl-head" icon={<PieChart className="h-4 w-4 text-indigo-500" />} label="GL Head Report" />
                                     <NavItem to="/reports/daybook" icon={<BookOpen className="h-4 w-4 text-gray-500" />} label="Day Book" />
                                     <NavItem to="/reports/defaulters" icon={<Users className="h-4 w-4 text-red-500" />} label="Defaulters" />
                                     <NavItem to="/reports/student-ledger" icon={<Receipt className="h-4 w-4 text-blue-500" />} label="Student Ledger" />
@@ -128,7 +130,7 @@ export default function Layout() {
 
                                 {isSettingsOpen && (
                                     <div className="space-y-1 pl-4"> {/* Indented sub-menu */}
-                                        <NavItem to="/settings" icon={<Calendar className="h-4 w-4 text-indigo-600" />} label="Fiscal Years" end />
+                                        <NavItem to="/settings" icon={<Calendar className="h-4 w-4 text-indigo-600" />} label="Fiscal Year" end />
                                         <NavItem to="/chart-of-accounts" icon={<BookOpen className="h-4 w-4 text-teal-600" />} label="Chart of Accounts" />
                                         <NavItem to="/fee-structures" icon={<GraduationCap className="h-4 w-4 text-pink-600" />} label="Fee Structures" />
                                         <NavItem to="/salary-structures" icon={<DollarSign className="h-4 w-4 text-amber-600" />} label="Salary Structures" />

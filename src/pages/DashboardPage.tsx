@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Loader2, DollarSign, CreditCard, TrendingUp, TrendingDown, Receipt, Calendar, CalendarDays, Users, UserCog, GraduationCap, Shield } from 'lucide-react';
-import { getInvoices, getPayments, getExpenses, getStudents, getTeachers, getStaffMembers, getUsers } from '@/lib/api';
-
+import { getInvoices, getPayments, getExpenses, getStudents, getTeachers, getStaffMembers, getUsers, getFiscalYears } from '@/lib/api';
+import { toNepali, formatNepaliDate, getNepaliFiscalYear } from '@/lib/nepaliDate';
 
 export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
+        openingBalance: 0,
         totalInvoiced: 0,
         totalFeeCollection: 0,
         totalIncome: 0,
@@ -20,18 +21,27 @@ export default function DashboardPage() {
         totalUsers: 0
     });
 
+    const todayDate = new Date();
+    const nepaliDate = formatNepaliDate(toNepali(todayDate));
+    const fiscalYear = getNepaliFiscalYear(todayDate);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [invData, payData, expData, studentsData, teachersData, staffData, usersCount] = await Promise.all([
+                const [invData, payData, expData, studentsData, teachersData, staffData, usersCount, fyData] = await Promise.all([
                     getInvoices(),
                     getPayments(),
                     getExpenses(),
                     getStudents().catch(() => []),
                     getTeachers().catch(() => []),
                     getStaffMembers().catch(() => []),
-                    getUsers().catch(() => 0)
+                    getUsers().catch(() => 0),
+                    getFiscalYears()
                 ]);
+
+                // Get Active FY Opening Balance
+                const activeFy = fyData.find(f => f.is_active);
+                const openingBalance = activeFy?.opening_balance || 0;
 
                 // Calculate Totals
                 const totalInvoiced = invData.reduce((sum, i) => sum + i.total_amount, 0);
@@ -98,6 +108,7 @@ export default function DashboardPage() {
                 ).length;
 
                 setStats({
+                    openingBalance,
                     totalInvoiced,
                     totalFeeCollection,
                     totalIncome,
@@ -126,10 +137,28 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+            <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+                <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-2 shadow-sm">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                        <Calendar className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="text-right">
+                        <p className="text-sm font-bold">{nepaliDate}</p>
+                        <p className="text-xs font-medium text-muted-foreground">FY {fiscalYear}</p>
+                    </div>
+                </div>
+            </div>
 
             {/* KPI Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+                <StatCard
+                    title="Opening Balance"
+                    value={stats.openingBalance}
+                    icon={<DollarSign className="h-6 w-6" />}
+                    gradient="from-[#475569] to-[#334155]"
+                    iconBg="bg-white/20"
+                />
                 <StatCard
                     title="Total Assessed Fees"
                     value={stats.totalInvoiced}

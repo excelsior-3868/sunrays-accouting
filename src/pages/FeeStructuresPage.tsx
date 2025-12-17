@@ -4,7 +4,7 @@ import { Plus, Pencil, Trash2, X, PlusCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { getFeeStructures, createFeeStructure, updateFeeStructure, deleteFeeStructure, getFiscalYears, getGLHeads } from '@/lib/api';
 import { type FeeStructure, type FiscalYear, type GLHead, type FeeStructureItem } from '@/types';
-import { cn } from '@/lib/utils';
+
 import { Loader2 } from 'lucide-react';
 
 export default function FeeStructuresPage() {
@@ -96,20 +96,20 @@ export default function FeeStructuresPage() {
         // Calculate total amount from items
         const totalAmount = formData.items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 
-        const payload = {
+        const structureData = {
             name: formData.name,
             fiscal_year_id: formData.fiscal_year_id,
             class_name: formData.class_name,
-            amount: totalAmount, // Set derived amount
-            items: formData.items
+            amount: totalAmount
         };
+        const itemsData = formData.items;
 
         try {
             if (editingId) {
-                await updateFeeStructure(editingId, payload);
+                await updateFeeStructure(editingId, structureData, itemsData);
                 toast({ title: "Success", description: "Updated successfully" });
             } else {
-                await createFeeStructure(payload);
+                await createFeeStructure(structureData, itemsData);
                 toast({ title: "Success", description: "Created successfully" });
             }
             setIsDialogOpen(false);

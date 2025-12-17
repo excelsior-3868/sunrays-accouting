@@ -124,7 +124,11 @@ export const createFeeStructure = async (
     return stData;
 };
 
-export const updateFeeStructure = async (id: string, updates: Partial<FeeStructure>) => {
+export const updateFeeStructure = async (
+    id: string,
+    updates: Partial<FeeStructure>,
+    items?: Omit<FeeStructureItem, 'id' | 'created_at' | 'structure_id' | 'gl_head'>[]
+) => {
     const { data, error } = await supabase
         .from('fee_structures')
         .update(updates)
@@ -133,6 +137,27 @@ export const updateFeeStructure = async (id: string, updates: Partial<FeeStructu
         .single();
 
     if (error) throw error;
+
+    if (items) {
+        // Delete existing items
+        const { error: delError } = await supabase
+            .from('fee_structure_items')
+            .delete()
+            .eq('structure_id', id);
+
+        if (delError) throw delError;
+
+        // Insert new items
+        if (items.length > 0) {
+            const itemsWithId = items.map(item => ({ ...item, structure_id: id }));
+            const { error: insError } = await supabase
+                .from('fee_structure_items')
+                .insert(itemsWithId);
+
+            if (insError) throw insError;
+        }
+    }
+
     return data as FeeStructure;
 };
 
@@ -303,7 +328,7 @@ export const recordDirectIncome = async (income: Omit<Payment, 'id' | 'created_a
 export const getPayments = async () => {
     const { data, error } = await supabase
         .from('payments')
-        .select('*, payment_mode:gl_heads!payment_mode_gl_id(*), invoice:invoices(*), income_head:gl_heads!income_head_id(*)')
+        .select('*, payment_mode:gl_heads!payment_mode_gl_id(*), invoice:invoices(*, items:invoice_items(*)), income_head:gl_heads!income_head_id(*)')
         .order('payment_date', { ascending: false });
 
     if (error) throw error;
@@ -325,7 +350,11 @@ export const getExpenses = async () => {
     return data as Expense[];
 };
 
+
 export const createExpense = async (expense: Omit<Expense, 'id' | 'created_at' | 'expense_head' | 'payment_mode'>) => {
+    // If we have payment_method but no payment_mode_gl_id, we just insert payment_method.
+    // Ideally the DB schema should have been updated to allow payment_mode_gl_id to be nullable.
+
     const { data, error } = await supabase
         .from('expenses')
         .insert([expense])

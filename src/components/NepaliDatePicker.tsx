@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import NepaliDate from 'nepali-date-converter';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { toNepali, toEnglish } from '@/lib/nepaliDate';
+import { toNepali } from '@/lib/nepaliDate';
 
 interface NepaliDatePickerProps {
     value?: string | Date | null; // AD Date string or object
     onChange: (adDate: string) => void;
+    onClear?: () => void;
     placeholder?: string;
     className?: string;
 }
@@ -16,7 +17,7 @@ const NEPAL_MONTHS_BS = [
     "कार्तिक", "मंसिर", "पुष", "माघ", "फागुन", "चैत"
 ];
 
-export default function NepaliDatePicker({ value, onChange, placeholder = "Select Date", className }: NepaliDatePickerProps) {
+export default function NepaliDatePicker({ value, onChange, onClear, placeholder = "Select Date", className }: NepaliDatePickerProps) {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -124,7 +125,23 @@ export default function NepaliDatePicker({ value, onChange, placeholder = "Selec
                 onClick={() => setIsOpen(!isOpen)}
             >
                 {displayValue || placeholder}
-                <CalendarIcon className="h-4 w-4 opacity-50" />
+                <div className="flex items-center">
+                    {value && onClear ? (
+                        <div
+                            role="button"
+                            className="p-1 -mr-1 hover:bg-muted rounded-full text-muted-foreground hover:text-foreground transition-colors"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onClear();
+                                setIsOpen(false);
+                            }}
+                        >
+                            <X className="h-4 w-4" />
+                        </div>
+                    ) : (
+                        <CalendarIcon className="h-4 w-4 opacity-50" />
+                    )}
+                </div>
             </div>
 
             {isOpen && (

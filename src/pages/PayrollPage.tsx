@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { getPayrollRuns, generatePayrollRun, getFiscalYears, approvePayrollRun, getPayrollRunDetails, deletePayrollRun } from '@/lib/api';
 import { type PayrollRun, type FiscalYear } from '@/types';
 import { usePermission } from '@/hooks/usePermission';
+import { toNepali } from '@/lib/nepaliDate';
 
 export default function PayrollPage() {
     const { can } = usePermission();
@@ -220,7 +221,8 @@ export default function PayrollPage() {
                         <thead className="[&_tr]:border-b">
                             <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
                                 <th className="h-12 px-4 text-left align-middle font-medium">Month</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Run Date</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Run Date(BS)</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium">Run Date(AD)</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium">Approve Status</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium">Actions</th>
                             </tr>
@@ -229,7 +231,8 @@ export default function PayrollPage() {
                             {paginatedRuns.map((run) => (
                                 <tr key={run.id} className="border-b transition-colors hover:bg-muted/50">
                                     <td className="p-4 align-middle font-medium">{run.month}</td>
-                                    <td className="p-4 align-middle">{run.created_at?.split('T')[0]}</td>
+                                    <td className="p-4 align-middle font-medium whitespace-nowrap">{toNepali(run.created_at?.split('T')[0])}</td>
+                                    <td className="p-4 align-middle text-muted-foreground whitespace-nowrap">{run.created_at?.split('T')[0]}</td>
                                     <td className="p-4 align-middle">
                                         <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent ${run.is_posted ? 'bg-green-500/15 text-green-700' : 'bg-yellow-500/15 text-yellow-700'
                                             }`}>
@@ -261,7 +264,7 @@ export default function PayrollPage() {
                             ))}
 
                             {paginatedRuns.length === 0 && (
-                                <tr><td colSpan={4} className="p-4 text-center text-muted-foreground">No payroll runs found.</td></tr>
+                                <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">No payroll runs found.</td></tr>
                             )}
                         </tbody>
                     </table>
