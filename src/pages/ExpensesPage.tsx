@@ -336,8 +336,7 @@ export default function ExpensesPage() {
                                 <label className="text-sm font-medium">Payment Mode (Paid From)</label>
                                 <SearchableSelect
                                     options={[
-                                        { value: 'Cash in Hand', label: 'Cash in Hand', group: 'Methods' },
-                                        { value: 'Petty Cash', label: 'Petty Cash', group: 'Methods' },
+                                        { value: 'Cash', label: 'Cash', group: 'Methods' },
                                         { value: 'Bank Account', label: 'Bank Account', group: 'Methods' },
                                         { value: 'Digital Payment', label: 'Digital Payment', group: 'Methods' },
                                         { value: 'Cheque', label: 'Cheque', group: 'Methods' },

@@ -92,23 +92,40 @@ export default function InvoicesPage() {
     const fetchData = async () => {
         try {
             console.log('Fetching invoice data...');
-            const [invData, stData, fyData, studData] = await Promise.all([
+            console.log('Fetching invoice data...');
+            const results = await Promise.allSettled([
                 getInvoices(),
                 getFeeStructures(),
                 getFiscalYears(),
                 getStudents()
             ]);
 
+            // Helper to get value or default
+            const getValue = <T,>(result: PromiseSettledResult<T>, fallback: T): T => {
+                if (result.status === 'fulfilled') return result.value;
+                console.error('Data fetch failed:', result.reason);
+                return fallback;
+            };
+
+            const invData = getValue(results[0], []);
+            const stData = getValue(results[1], []);
+            const fyData = getValue(results[2], []);
+            const studData = getValue(results[3], []);
+
             // Critical Safety Checks: Ensure we never set state to null/undefined
-            setInvoices(invData || []);
-            setFeeStructures(stData || []);
-            setFiscalYears((fyData || []).filter(fy => fy.is_active));
-            setAllStudents(studData || []);
+            setInvoices(invData);
+            setFeeStructures(stData);
+            setFiscalYears(fyData.filter(fy => fy.is_active));
+            setAllStudents(studData);
 
             console.log('Data loaded:', {
-                invoices: invData?.length,
-                students: studData?.length
+                invoices: invData.length,
+                students: studData.length
             });
+
+            if (results[3].status === 'rejected') {
+                toast({ variant: "destructive", title: "Warning", description: "Failed to load students. Student names may be missing." });
+            }
         } catch (error) {
             console.error('Error fetching data:', error);
             // Even on error, ensure states are empty arrays, not null

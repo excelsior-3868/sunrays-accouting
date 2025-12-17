@@ -35,6 +35,7 @@ export default function IncomePage() {
         amount: '',
         income_head_id: '',
         payment_mode_gl_id: '',
+        payment_method: 'Cash',
         fiscal_year_id: '',
         transaction_reference: '',
         remarks: ''
@@ -151,11 +152,32 @@ export default function IncomePage() {
 
     const handleConfirmPost = async () => {
         try {
+            // Map selected payment method to GL Head ID
+            let paymentHeadId = undefined;
+            if (newIncomeState.payment_method) {
+                if (newIncomeState.payment_method === 'Cash') {
+                    paymentHeadId = paymentModes.find(h => h.name.toLowerCase().includes('cash'))?.id;
+                } else {
+                    paymentHeadId = paymentModes.find(h => h.name.toLowerCase().includes('bank'))?.id;
+                }
+
+                // Final Fallback
+                if (!paymentHeadId && paymentModes.length > 0) {
+                    paymentHeadId = paymentModes[0].id;
+                }
+            }
+
+            if (!paymentHeadId) {
+                toast({ variant: "destructive", title: "Error", description: "Could not map Payment Mode to a Ledger." });
+                return;
+            }
+
             await recordDirectIncome({
                 income_head_id: newIncomeState.income_head_id,
                 amount: parseFloat(newIncomeState.amount),
                 payment_date: newIncomeState.income_date,
-                payment_mode_gl_id: newIncomeState.payment_mode_gl_id,
+                payment_mode_gl_id: paymentHeadId,
+                payment_method: newIncomeState.payment_method,
                 fiscal_year_id: newIncomeState.fiscal_year_id,
                 transaction_reference: newIncomeState.transaction_reference || undefined,
                 remarks: newIncomeState.remarks || undefined
@@ -169,6 +191,7 @@ export default function IncomePage() {
                 amount: '',
                 income_head_id: '',
                 payment_mode_gl_id: '',
+                payment_method: 'Cash',
                 fiscal_year_id: newIncomeState.fiscal_year_id,
                 transaction_reference: '',
                 remarks: ''
@@ -316,8 +339,8 @@ export default function IncomePage() {
                                         <button
                                             onClick={() => setCurrentPage(page)}
                                             className={`inline-flex items-center justify-center h-8 w-8 rounded border ${currentPage === page
-                                                    ? 'bg-primary text-primary-foreground'
-                                                    : 'bg-background hover:bg-accent'
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'bg-background hover:bg-accent'
                                                 }`}
                                         >
                                             {page}
@@ -381,17 +404,18 @@ export default function IncomePage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Payment Mode *</label>
-                                    <select
-                                        required
-                                        value={newIncomeState.payment_mode_gl_id}
-                                        onChange={e => setNewIncomeState({ ...newIncomeState, payment_mode_gl_id: e.target.value })}
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                    >
-                                        <option value="">Select Payment Mode</option>
-                                        {paymentModes.map(h => (
-                                            <option key={h.id} value={h.id}>{h.name}</option>
-                                        ))}
-                                    </select>
+                                    <SearchableSelect
+                                        options={[
+                                            { value: 'Cash', label: 'Cash', group: 'Methods' },
+                                            { value: 'Bank Account', label: 'Bank Account', group: 'Methods' },
+                                            { value: 'Digital Payment', label: 'Digital Payment', group: 'Methods' },
+                                            { value: 'Cheque', label: 'Cheque', group: 'Methods' },
+                                        ]}
+                                        value={newIncomeState.payment_method}
+                                        onChange={(val) => setNewIncomeState({ ...newIncomeState, payment_method: val })}
+                                        placeholder="Select Payment Mode..."
+                                    />
+                                    <input type="hidden" name="payment_method" value={newIncomeState.payment_method} required />
                                 </div>
 
                                 <div className="space-y-2">
@@ -463,7 +487,7 @@ export default function IncomePage() {
                         </div>
                         <div className="grid grid-cols-3 gap-2">
                             <span className="font-semibold text-muted-foreground">Payment Mode:</span>
-                            <span className="col-span-2">{paymentModes.find(h => h.id === newIncomeState.payment_mode_gl_id)?.name}</span>
+                            <span className="col-span-2">{newIncomeState.payment_method}</span>
                         </div>
                         {newIncomeState.transaction_reference && (
                             <div className="grid grid-cols-3 gap-2">

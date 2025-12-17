@@ -278,6 +278,7 @@ export const recordPayment = async (payment: Omit<Payment, 'id' | 'created_at' |
                 payment_date: payment.payment_date,
                 fiscal_year_id: payment.fiscal_year_id,
                 payment_mode_gl_id: payment.payment_mode_gl_id,
+                payment_method: payment.payment_method,
                 remarks: `Backlog cleared via payment for ${currentInvoice.invoice_number} (${currentInvoice.month || ''})`
             }));
 
@@ -516,7 +517,7 @@ export const getPayrollRunDetails = async (id: string) => {
     return data; // Typed casually
 };
 
-export const approvePayrollRun = async (runId: string) => {
+export const approvePayrollRun = async (runId: string, paymentModeId?: string) => {
     // 1. Get Payslips
     const { data: run, error: runError } = await supabase
         .from('payroll_runs')
@@ -528,9 +529,13 @@ export const approvePayrollRun = async (runId: string) => {
     if (run.is_posted) throw new Error('Payroll run already posted.');
 
     // 2. Get GL Heads
-    const { data: cashMethods } = await supabase.from('gl_heads').select('id, name').ilike('name', '%Cash%').limit(1);
-    if (!cashMethods || cashMethods.length === 0) throw new Error('Cash GL Head not found for payment (searched for "%Cash%").');
-    const cashHeadId = cashMethods[0].id;
+    let paymentHeadId = paymentModeId;
+    if (!paymentHeadId) {
+        // Fallback to Cash if not provided
+        const { data: cashMethods } = await supabase.from('gl_heads').select('id, name').ilike('name', '%Cash%').limit(1);
+        if (!cashMethods || cashMethods.length === 0) throw new Error('Cash GL Head not found for payment (searched for "%Cash%").');
+        paymentHeadId = cashMethods[0].id;
+    }
 
     // Get specific Salary Heads
     const { data: teacherSalaryHeads } = await supabase.from('gl_heads').select('id').ilike('name', '%Teacher Salary%').limit(1);
@@ -573,7 +578,7 @@ export const approvePayrollRun = async (runId: string) => {
             amount: slip.net_salary,
             description: `Salary Payment for ${slip.employee_name} - ${run.month}`,
             expense_head_id: expenseHeadId,
-            payment_mode_gl_id: cashHeadId,
+            payment_mode_gl_id: paymentHeadId,
             fiscal_year_id: run.fiscal_year_id
         });
     }
