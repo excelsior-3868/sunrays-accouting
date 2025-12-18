@@ -1,0 +1,42 @@
+name: Supabase Backup
+
+on:
+  schedule:
+    - cron: "15 16 * * *"   # 12:15 PM Nepal Time
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        run: |
+          rm -rf supabase supabase.tar.gz
+          curl -L https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz -o supabase.tar.gz
+          tar -xzf supabase.tar.gz
+          sudo mv supabase /usr/local/bin/supabase
+          sudo chmod +x /usr/local/bin/supabase
+
+      - name: Verify Supabase CLI
+        run: supabase --version
+
+      - name: Create Supabase Backup (NO Docker)
+        run: |
+          mkdir -p backups
+          DATE=$(date +'%Y-%m-%d')
+          supabase db dump \
+            --db-url "${{ secrets.SUPABASE_DB_URL }}" \
+            --use-docker=false \
+            > backups/supabase-$DATE.sql
+
+      - name: Commit and Push Backup
+        run: |
+          git config user.name "backup-bot"
+          git config user.email "backup@github.com"
+          git add backups/
+          git commit -m "Supabase backup $(date +'%Y-%m-%d')" || echo "No changes to commit"
+          git push
