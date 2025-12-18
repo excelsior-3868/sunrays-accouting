@@ -1,0 +1,41 @@
+name: Supabase Nightly Backup
+
+on:
+  schedule:
+    - cron: "15 16 * * *"   # 10:00 PM Nepal Time
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Create Database Backup (pg_dump)
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          mkdir -p backups
+          DATE=$(date +'%Y-%m-%d')
+
+          pg_dump \
+            "$DATABASE_URL" \
+            --format=custom \
+            --no-owner \
+            --no-privileges \
+            > backups/supabase-$DATE.dump
+
+      - name: Commit and Push Backup
+        run: |
+          git config user.name "backup-bot"
+          git config user.email "backup@github.com"
+          git add backups/
+          git commit -m "Supabase backup $(date +'%Y-%m-%d')" || echo "No changes to commit"
+          git push
