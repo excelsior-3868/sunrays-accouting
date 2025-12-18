@@ -89,6 +89,18 @@ export type Payment = {
     income_head?: GLHead; // Joined
 };
 
+export type InventoryItem = {
+    id: string;
+    name: string;
+    parent_id?: string;
+    quantity: number;
+    unit?: string;
+    description?: string;
+    children?: InventoryItem[]; // Frontend tree structure
+    created_at: string;
+    updated_at: string;
+};
+
 /* Phase 3: Expenses & Payroll */
 
 export type Expense = {

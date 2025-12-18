@@ -18,7 +18,10 @@ import {
     Users,
     LogOut,
     Key,
-    PieChart
+    PieChart,
+    Menu,
+    ChevronLeft,
+    Box
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -49,19 +52,36 @@ export default function Layout() {
     const canViewSettings = role === 'Super Admin' || role === 'Admin' || can('roles.manage');
 
 
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
     return (
         <div className="flex h-screen bg-muted/40">
+            {/* Mobile Sidebar Backdrop */}
+            {isMobileMenuOpen && (
+                <div
+                    className="fixed inset-0 z-40 bg-black/50 sm:hidden"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                />
+            )}
+
             {/* Sidebar */}
-            <aside className="fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r bg-background sm:flex">
-                <div className="flex h-20 items-center border-b px-4 lg:px-6">
+            <aside className={cn(
+                "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-background transition-transform duration-300 sm:translate-x-0",
+                isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+            )}>
+                <div className="flex h-20 items-center border-b px-4 lg:px-6 justify-between">
                     <div className="flex items-center gap-2 font-semibold">
                         <img src="/logo.png" alt="Logo" className="h-16 w-auto object-contain" />
                         <span className="">School Lekha</span>
                     </div>
+                    {/* Close button for mobile */}
+                    <button onClick={() => setIsMobileMenuOpen(false)} className="sm:hidden p-1">
+                        <ChevronLeft className="h-6 w-6" />
+                    </button>
                 </div>
                 <div className="flex-1 overflow-y-auto py-4">
                     <nav className="grid items-start px-2 text-sm font-medium lg:px-4 gap-1">
-                        <NavItem to="/" icon={<LayoutDashboard className="h-4 w-4 text-blue-600" />} label="Dashboard" />
+                        <NavItem to="/" icon={<LayoutDashboard className="h-4 w-4 text-blue-600" />} label="Dashboard" onClick={() => setIsMobileMenuOpen(false)} />
 
                         <div className="my-2 border-t border-border" />
 
@@ -78,14 +98,14 @@ export default function Layout() {
 
                             {isReportsOpen && (
                                 <div className="space-y-1 pl-4">
-                                    <NavItem to="/reports/gl-head" icon={<PieChart className="h-4 w-4 text-indigo-500" />} label="GL Head Report" />
-                                    <NavItem to="/reports/daybook" icon={<BookOpen className="h-4 w-4 text-gray-500" />} label="Day Book" />
-                                    <NavItem to="/reports/defaulters" icon={<Users className="h-4 w-4 text-red-500" />} label="Defaulters" />
-                                    <NavItem to="/reports/student-ledger" icon={<Receipt className="h-4 w-4 text-blue-500" />} label="Student Ledger" />
-                                    <NavItem to="/reports/staff-ledger" icon={<Receipt className="h-4 w-4 text-cyan-500" />} label="Staff Ledger" />
-                                    <NavItem to="/reports/profit-loss" icon={<TrendingDown className="h-4 w-4 text-green-500" />} label="Profit & Loss" />
-                                    <NavItem to="/reports/cash-flow" icon={<Wallet className="h-4 w-4 text-orange-500" />} label="Cash Flow" />
-                                    <NavItem to="/reports/salary-sheet" icon={<DollarSign className="h-4 w-4 text-purple-500" />} label="Salary Sheet" />
+                                    <NavItem to="/reports/gl-head" icon={<PieChart className="h-4 w-4 text-indigo-500" />} label="GL Head Report" onClick={() => setIsMobileMenuOpen(false)} />
+                                    <NavItem to="/reports/daybook" icon={<BookOpen className="h-4 w-4 text-gray-500" />} label="Day Book" onClick={() => setIsMobileMenuOpen(false)} />
+                                    <NavItem to="/reports/defaulters" icon={<Users className="h-4 w-4 text-red-500" />} label="Defaulters" onClick={() => setIsMobileMenuOpen(false)} />
+                                    <NavItem to="/reports/student-ledger" icon={<Receipt className="h-4 w-4 text-blue-500" />} label="Student Ledger" onClick={() => setIsMobileMenuOpen(false)} />
+                                    <NavItem to="/reports/staff-ledger" icon={<Receipt className="h-4 w-4 text-cyan-500" />} label="Staff Ledger" onClick={() => setIsMobileMenuOpen(false)} />
+                                    <NavItem to="/reports/profit-loss" icon={<TrendingDown className="h-4 w-4 text-green-500" />} label="Profit & Loss" onClick={() => setIsMobileMenuOpen(false)} />
+                                    <NavItem to="/reports/cash-flow" icon={<Wallet className="h-4 w-4 text-orange-500" />} label="Cash Flow" onClick={() => setIsMobileMenuOpen(false)} />
+                                    <NavItem to="/reports/salary-sheet" icon={<DollarSign className="h-4 w-4 text-purple-500" />} label="Salary Sheet" onClick={() => setIsMobileMenuOpen(false)} />
                                 </div>
                             )}
                         </div>
@@ -93,25 +113,26 @@ export default function Layout() {
                         <div className="my-2 border-t border-border" />
 
                         {canViewInvoices && (
-                            <NavItem to="/invoices" icon={<Receipt className="h-4 w-4 text-green-600" />} label="Invoices" />
+                            <NavItem to="/invoices" icon={<Receipt className="h-4 w-4 text-green-600" />} label="Invoices" onClick={() => setIsMobileMenuOpen(false)} />
                         )}
                         {canViewPayroll && (
-                            <NavItem to="/payroll" icon={<Wallet className="h-4 w-4 text-orange-600" />} label="Payroll" />
+                            <NavItem to="/payroll" icon={<Wallet className="h-4 w-4 text-orange-600" />} label="Payroll" onClick={() => setIsMobileMenuOpen(false)} />
                         )}
                         {canViewExpenses && (
-                            <NavItem to="/income" icon={<TrendingUp className="h-4 w-4 text-purple-600" />} label="Income" />
+                            <NavItem to="/income" icon={<TrendingUp className="h-4 w-4 text-purple-600" />} label="Income" onClick={() => setIsMobileMenuOpen(false)} />
                         )}
                         {canViewExpenses && (
-                            <NavItem to="/expenses" icon={<TrendingDown className="h-4 w-4 text-red-600" />} label="Expenses" />
+                            <NavItem to="/expenses" icon={<TrendingDown className="h-4 w-4 text-red-600" />} label="Expenses" onClick={() => setIsMobileMenuOpen(false)} />
                         )}
+                        <NavItem to="/inventory" icon={<Box className="h-4 w-4 text-amber-600" />} label="Inventory" onClick={() => setIsMobileMenuOpen(false)} />
 
                         <div className="my-2 border-t border-border" />
 
                         {canViewUsers && (
-                            <NavItem to="/users" icon={<Users className="h-4 w-4 text-cyan-600" />} label="Users" />
+                            <NavItem to="/users" icon={<Users className="h-4 w-4 text-cyan-600" />} label="Users" onClick={() => setIsMobileMenuOpen(false)} />
                         )}
                         {canViewRoles && (
-                            <NavItem to="/roles" icon={<Key className="h-4 w-4 text-emerald-600" />} label="Roles" />
+                            <NavItem to="/roles" icon={<Key className="h-4 w-4 text-emerald-600" />} label="Roles" onClick={() => setIsMobileMenuOpen(false)} />
                         )}
 
                         <div className="my-2 border-t border-border" />
@@ -130,11 +151,11 @@ export default function Layout() {
 
                                 {isSettingsOpen && (
                                     <div className="space-y-1 pl-4"> {/* Indented sub-menu */}
-                                        <NavItem to="/settings" icon={<Calendar className="h-4 w-4 text-indigo-600" />} label="Fiscal Year" end />
-                                        <NavItem to="/chart-of-accounts" icon={<BookOpen className="h-4 w-4 text-teal-600" />} label="Chart of Accounts" />
-                                        <NavItem to="/fee-structures" icon={<GraduationCap className="h-4 w-4 text-pink-600" />} label="Fee Structures" />
-                                        <NavItem to="/salary-structures" icon={<DollarSign className="h-4 w-4 text-amber-600" />} label="Salary Structures" />
-                                        <NavItem to="/settings/staffs" icon={<Users className="h-4 w-4 text-cyan-600" />} label="Staffs" />
+                                        <NavItem to="/settings" icon={<Calendar className="h-4 w-4 text-indigo-600" />} label="Fiscal Year" end onClick={() => setIsMobileMenuOpen(false)} />
+                                        <NavItem to="/chart-of-accounts" icon={<BookOpen className="h-4 w-4 text-teal-600" />} label="Chart of Accounts" onClick={() => setIsMobileMenuOpen(false)} />
+                                        <NavItem to="/fee-structures" icon={<GraduationCap className="h-4 w-4 text-pink-600" />} label="Fee Structures" onClick={() => setIsMobileMenuOpen(false)} />
+                                        <NavItem to="/salary-structures" icon={<DollarSign className="h-4 w-4 text-amber-600" />} label="Salary Structures" onClick={() => setIsMobileMenuOpen(false)} />
+                                        <NavItem to="/settings/staffs" icon={<Users className="h-4 w-4 text-cyan-600" />} label="Staffs" onClick={() => setIsMobileMenuOpen(false)} />
                                     </div>
                                 )}
                             </>
@@ -181,8 +202,13 @@ export default function Layout() {
 
             {/* Main Content */}
             <div className="flex flex-col sm:gap-4 sm:pl-64 w-full">
-                <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-                    {/* Mobile breadcrumb or header content could go here */}
+                <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+                    <button
+                        className="sm:hidden"
+                        onClick={() => setIsMobileMenuOpen(true)}
+                    >
+                        <Menu className="h-6 w-6" />
+                    </button>
                     <div className="w-full flex-1">
                         {/* Search or page title */}
                     </div>
@@ -200,11 +226,12 @@ export default function Layout() {
     );
 }
 
-function NavItem({ to, icon, label, end }: { to: string; icon: React.ReactNode; label: string; end?: boolean }) {
+function NavItem({ to, icon, label, end, onClick }: { to: string; icon: React.ReactNode; label: string; end?: boolean; onClick?: () => void }) {
     return (
         <NavLink
             to={to}
             end={end}
+            onClick={onClick}
             className={({ isActive }) =>
                 cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2 transition-all",

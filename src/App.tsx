@@ -15,6 +15,7 @@ import IncomePage from '@/pages/IncomePage';
 import SalaryStructuresPage from '@/pages/SalaryStructuresPage';
 import PayrollPage from '@/pages/PayrollPage';
 import ReportsPage from '@/pages/ReportsPage';
+import InventoryPage from '@/pages/InventoryPage';
 import DefaultersReport from '@/pages/reports/DefaultersReport';
 import StudentLedgerReport from '@/pages/reports/StudentLedgerReport';
 import ProfitLossReport from '@/pages/reports/ProfitLossReport';
@@ -58,6 +59,8 @@ function App() {
             } />
             <Route path="/income" element={<IncomePage />} />
             <Route path="/expenses" element={<ExpensesPage />} />
+            {/* Inventory Management Route */}
+            <Route path="/inventory" element={<InventoryPage />} />
 
             <Route path="/salary-structures" element={<SalaryStructuresPage />} />
             <Route path="/settings/staffs" element={<StaffsPage />} />
