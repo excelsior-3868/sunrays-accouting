@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Loader2, DollarSign, CreditCard, TrendingUp, TrendingDown, Receipt, Calendar, CalendarDays, Users, UserCog, GraduationCap, Shield } from 'lucide-react';
-import { getInvoices, getPayments, getExpenses, getStudents, getTeachers, getStaffMembers, getUsers, getFiscalYears } from '@/lib/api';
+import { getInvoices, getPayments, getExpenses, getStudents, getTeachers, getStaffMembers, getUsers } from '@/lib/api';
 import { toNepali, formatNepaliDate, getNepaliFiscalYear } from '@/lib/nepaliDate';
 
 export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
-        openingBalance: 0,
         totalInvoiced: 0,
         totalFeeCollection: 0,
         totalIncome: 0,
@@ -28,20 +27,15 @@ export default function DashboardPage() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [invData, payData, expData, studentsData, teachersData, staffData, usersCount, fyData] = await Promise.all([
+                const [invData, payData, expData, studentsData, teachersData, staffData, usersCount] = await Promise.all([
                     getInvoices(),
                     getPayments(),
                     getExpenses(),
                     getStudents().catch(() => []),
                     getTeachers().catch(() => []),
                     getStaffMembers().catch(() => []),
-                    getUsers().catch(() => 0),
-                    getFiscalYears()
+                    getUsers().catch(() => 0)
                 ]);
-
-                // Get Active FY Opening Balance
-                const activeFy = fyData.find(f => f.is_active);
-                const openingBalance = activeFy?.opening_balance || 0;
 
                 // Calculate Totals
                 const totalInvoiced = invData.reduce((sum, i) => sum + i.total_amount, 0);
@@ -108,7 +102,6 @@ export default function DashboardPage() {
                 ).length;
 
                 setStats({
-                    openingBalance,
                     totalInvoiced,
                     totalFeeCollection,
                     totalIncome,
@@ -151,14 +144,7 @@ export default function DashboardPage() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
-                <StatCard
-                    title="Opening Balance"
-                    value={stats.openingBalance}
-                    icon={<DollarSign className="h-6 w-6" />}
-                    gradient="from-[#475569] to-[#334155]"
-                    iconBg="bg-white/20"
-                />
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
                 <StatCard
                     title="Total Assessed Fees"
                     value={stats.totalInvoiced}

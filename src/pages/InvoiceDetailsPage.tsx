@@ -4,6 +4,7 @@ import { Loader2, ArrowLeft, CreditCard, Printer } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { getInvoiceById, recordPayment, getFiscalYears, getGLHeads, getStudentUnpaidStats } from '@/lib/api';
 import { type Invoice, type FiscalYear, type GLHead } from '@/types';
+import SearchableSelect from '@/components/SearchableSelect';
 import { usePermission } from '@/hooks/usePermission';
 import {
     AlertDialog,
@@ -35,6 +36,7 @@ export default function InvoiceDetailsPage() {
     // Data for payment form
     const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([]);
     const [paymentModes, setPaymentModes] = useState<GLHead[]>([]);
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('Cash');
 
     const fetchInvoice = async () => {
         if (!id) return;
@@ -69,13 +71,34 @@ export default function InvoiceDetailsPage() {
         e.preventDefault();
         if (!invoice || !can('invoices.create')) return;
 
+        // Map selected payment method to GL Head ID
+        let paymentHeadId = undefined;
+        if (selectedPaymentMethod) {
+            if (selectedPaymentMethod === 'Cash') {
+                paymentHeadId = paymentModes.find(h => h.name.toLowerCase().includes('cash'))?.id;
+            } else {
+                paymentHeadId = paymentModes.find(h => h.name.toLowerCase().includes('bank'))?.id;
+            }
+
+            // Final Fallback
+            if (!paymentHeadId && paymentModes.length > 0) {
+                paymentHeadId = paymentModes[0].id;
+            }
+        }
+
+        if (!paymentHeadId) {
+            toast({ variant: "destructive", title: "Error", description: "Could not map Payment Mode to a Ledger." });
+            return;
+        }
+
         const formData = new FormData(e.currentTarget);
         const payment = {
             invoice_id: invoice.id,
             amount: Number(formData.get('amount')),
             payment_date: formData.get('payment_date') as string,
             fiscal_year_id: formData.get('fiscal_year_id') as string,
-            payment_mode_gl_id: formData.get('payment_mode_gl_id') as string,
+            payment_mode_gl_id: paymentHeadId,
+            payment_method: selectedPaymentMethod,
             remarks: formData.get('remarks') as string,
         };
 
@@ -213,13 +236,18 @@ export default function InvoiceDetailsPage() {
                                 <input type="date" name="payment_date" required defaultValue={new Date().toISOString().split('T')[0]} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Payment Mode (Asset GL)</label>
-                                <select name="payment_mode_gl_id" required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                                    <option value="">Select Mode (e.g. Cash, Bank)</option>
-                                    {paymentModes.map(h => (
-                                        <option key={h.id} value={h.id}>{h.name}</option>
-                                    ))}
-                                </select>
+                                <label className="text-sm font-medium">Payment Mode</label>
+                                <SearchableSelect
+                                    options={[
+                                        { value: 'Cash', label: 'Cash', group: 'Methods' },
+                                        { value: 'Bank Account', label: 'Bank Account', group: 'Methods' },
+                                        { value: 'Digital Payment', label: 'Digital Payment', group: 'Methods' },
+                                        { value: 'Cheque', label: 'Cheque', group: 'Methods' },
+                                    ]}
+                                    value={selectedPaymentMethod}
+                                    onChange={setSelectedPaymentMethod}
+                                    placeholder="Select Payment Mode..."
+                                />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Fiscal Year</label>
@@ -261,7 +289,7 @@ export default function InvoiceDetailsPage() {
                         </div>
                         <div className="flex justify-between border-b pb-1">
                             <span className="text-muted-foreground">Mode:</span>
-                            <span>{paymentModes.find(m => m.id === confirmPaymentData?.payment_mode_gl_id)?.name}</span>
+                            <span>{confirmPaymentData?.payment_method}</span>
                         </div>
                         {confirmPaymentData?.remarks && (
                             <div className="flex flex-col gap-1 pt-1">

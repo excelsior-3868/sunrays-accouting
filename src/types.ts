@@ -79,7 +79,8 @@ export type Payment = {
     amount: number;
     payment_date: string;
     fiscal_year_id: string;
-    payment_mode_gl_id: string;
+    payment_mode_gl_id?: string;
+    payment_method?: string; // e.g. "Cash", "Bank"
     income_head_id?: string; // For Direct Income
     transaction_reference?: string;
     remarks?: string;

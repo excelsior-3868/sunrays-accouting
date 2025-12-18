@@ -11,8 +11,9 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/components/ui/use-toast';
-import { getPayrollRuns, generatePayrollRun, getFiscalYears, approvePayrollRun, getPayrollRunDetails, deletePayrollRun } from '@/lib/api';
-import { type PayrollRun, type FiscalYear } from '@/types';
+import { getPayrollRuns, generatePayrollRun, getFiscalYears, approvePayrollRun, getPayrollRunDetails, deletePayrollRun, getGLHeads } from '@/lib/api';
+import { type PayrollRun, type FiscalYear, type GLHead } from '@/types';
+import SearchableSelect from '@/components/SearchableSelect';
 import { usePermission } from '@/hooks/usePermission';
 import { toNepali } from '@/lib/nepaliDate';
 
@@ -25,6 +26,8 @@ export default function PayrollPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState<'All' | 'Draft' | 'Posted'>('All');
     const [monthFilter, setMonthFilter] = useState('');
+    const [glHeads, setGlHeads] = useState<GLHead[]>([]);
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('Cash'); // Default to Cash
 
     const [alertConfig, setAlertConfig] = useState<{
         isOpen: boolean;
@@ -46,12 +49,14 @@ export default function PayrollPage() {
 
     const fetchData = async () => {
         try {
-            const [runData, fyData] = await Promise.all([
+            const [runData, fyData, glData] = await Promise.all([
                 getPayrollRuns(),
-                getFiscalYears()
+                getFiscalYears(),
+                getGLHeads()
             ]);
             setRuns(runData);
             setFiscalYears(fyData.filter(fy => fy.is_active));
+            setGlHeads(glData.filter(h => h.type === 'Asset'));
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
@@ -104,7 +109,23 @@ export default function PayrollPage() {
         const id = alertConfig.id;
         if (!id) return;
         try {
-            await approvePayrollRun(id);
+            // Map selected payment method to GL Head ID
+            let paymentHeadId = undefined;
+            if (selectedPaymentMethod) {
+                if (selectedPaymentMethod === 'Cash') {
+                    paymentHeadId = glHeads.find(h => h.name.toLowerCase().includes('cash'))?.id;
+                } else {
+                    // Start with Bank, if not found try loose match
+                    paymentHeadId = glHeads.find(h => h.name.toLowerCase().includes('bank'))?.id;
+                }
+
+                // Final Fallback: First Asset Head if we really can't find anything but user selected something
+                if (!paymentHeadId && glHeads.length > 0) {
+                    paymentHeadId = glHeads[0].id;
+                }
+            }
+
+            await approvePayrollRun(id, paymentHeadId);
             fetchData();
             toast({ title: "Success", description: "Payroll approved and expenses recorded successfully!" });
         } catch (error) {
@@ -399,6 +420,28 @@ export default function PayrollPage() {
                             </table>
                         </div>
 
+                        {!viewingRun.is_posted && (
+                            <div className="mt-4 flex items-center justify-between bg-muted/30 p-4 rounded-md border">
+                                <div className="space-y-1">
+                                    <p className="text-sm font-medium">Payment Method</p>
+                                    <p className="text-xs text-muted-foreground">Select how salary will be paid.</p>
+                                </div>
+                                <div className="w-[250px]">
+                                    <SearchableSelect
+                                        options={[
+                                            { value: 'Cash', label: 'Cash', group: 'Methods' },
+                                            { value: 'Bank Account', label: 'Bank Account', group: 'Methods' },
+                                            { value: 'Digital Payment', label: 'Digital Payment', group: 'Methods' },
+                                            { value: 'Cheque', label: 'Cheque', group: 'Methods' },
+                                        ]}
+                                        value={selectedPaymentMethod}
+                                        onChange={setSelectedPaymentMethod}
+                                        placeholder="Select Payment Mode..."
+                                    />
+                                </div>
+                            </div>
+                        )}
+
                         <div className="flex justify-end gap-2 mt-6">
                             <button onClick={() => setViewingRun(null)} className="h-9 px-4 rounded-md border text-sm hover:bg-accent">Close</button>
                             {!viewingRun.is_posted && can('payroll.manage') && (
@@ -415,7 +458,8 @@ export default function PayrollPage() {
                         </div>
                     </div>
                 </div>
-            )}
+            )
+            }
             {/* Alert Dialog */}
             <AlertDialog open={alertConfig.isOpen} onOpenChange={(open) => setAlertConfig(prev => ({ ...prev, isOpen: open }))}>
                 <AlertDialogContent>
@@ -436,6 +480,6 @@ export default function PayrollPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </div>
+        </div >
     );
 }

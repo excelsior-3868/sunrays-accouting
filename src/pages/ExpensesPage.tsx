@@ -28,7 +28,6 @@ export default function ExpensesPage() {
 
     // Form Data
     const [expenseHeads, setExpenseHeads] = useState<GLHead[]>([]);
-    const [assetHeads, setAssetHeads] = useState<GLHead[]>([]);
     const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([]);
 
     // Filters
@@ -47,7 +46,6 @@ export default function ExpensesPage() {
             ]);
             setExpenses(expData);
             setExpenseHeads(glData.filter(h => h.type === 'Expense'));
-            setAssetHeads(glData.filter(h => h.type === 'Asset'));
             setFiscalYears(fyData.filter(fy => fy.is_active));
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -132,8 +130,6 @@ export default function ExpensesPage() {
         if (a.group === b.group) return a.label.localeCompare(b.label);
         return a.group.localeCompare(b.group);
     });
-
-    const assetOptions = getOptionsFromHeads(assetHeads);
 
     const filteredExpenses = expenses.filter(exp =>
         selectedHeadFilter ? exp.expense_head_id === selectedHeadFilter : true
@@ -336,8 +332,7 @@ export default function ExpensesPage() {
                                 <label className="text-sm font-medium">Payment Mode (Paid From)</label>
                                 <SearchableSelect
                                     options={[
-                                        { value: 'Cash in Hand', label: 'Cash in Hand', group: 'Methods' },
-                                        { value: 'Petty Cash', label: 'Petty Cash', group: 'Methods' },
+                                        { value: 'Cash', label: 'Cash', group: 'Methods' },
                                         { value: 'Bank Account', label: 'Bank Account', group: 'Methods' },
                                         { value: 'Digital Payment', label: 'Digital Payment', group: 'Methods' },
                                         { value: 'Cheque', label: 'Cheque', group: 'Methods' },
