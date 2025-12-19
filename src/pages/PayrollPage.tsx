@@ -28,6 +28,10 @@ export default function PayrollPage() {
     const [monthFilter, setMonthFilter] = useState('');
     const [glHeads, setGlHeads] = useState<GLHead[]>([]);
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('Cash'); // Default to Cash
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [generationProgress, setGenerationProgress] = useState(0);
+    const [isApproving, setIsApproving] = useState(false);
+    const [approvalProgress, setApprovalProgress] = useState(0);
 
     const [alertConfig, setAlertConfig] = useState<{
         isOpen: boolean;
@@ -84,13 +88,22 @@ export default function PayrollPage() {
         }
 
         try {
-            await generatePayrollRun(fyId, month);
+            setIsGenerating(true);
+            setGenerationProgress(0);
             setIsDialogOpen(false);
+
+            await generatePayrollRun(fyId, month, (progress) => {
+                setGenerationProgress(progress);
+            });
+
             fetchData();
             toast({ title: "Success", description: "Payroll run generated successfully" });
         } catch (error) {
             console.error('Error generating payroll:', error);
             toast({ variant: "destructive", title: "Error", description: "Failed to generate payroll run" });
+        } finally {
+            setIsGenerating(false);
+            setGenerationProgress(0);
         }
     };
 
@@ -109,6 +122,9 @@ export default function PayrollPage() {
         const id = alertConfig.id;
         if (!id) return;
         try {
+            setIsApproving(true);
+            setApprovalProgress(0);
+
             // Map selected payment method to GL Head ID
             let paymentHeadId = undefined;
             if (selectedPaymentMethod) {
@@ -125,13 +141,18 @@ export default function PayrollPage() {
                 }
             }
 
-            await approvePayrollRun(id, paymentHeadId);
+            await approvePayrollRun(id, paymentHeadId, (progress) => {
+                setApprovalProgress(progress);
+            });
+
             fetchData();
             toast({ title: "Success", description: "Payroll approved and expenses recorded successfully!" });
         } catch (error) {
             console.error('Error approving payroll:', error);
             toast({ variant: "destructive", title: "Error", description: "Failed to approve payroll." });
         } finally {
+            setIsApproving(false);
+            setApprovalProgress(0);
             setAlertConfig(prev => ({ ...prev, isOpen: false }));
         }
     };
@@ -480,6 +501,41 @@ export default function PayrollPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Generation Progress Modal */}
+            {(isGenerating || isApproving) && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="bg-background rounded-2xl shadow-2xl w-full max-w-md p-8 animate-in fade-in zoom-in duration-300">
+                        <div className="flex flex-col items-center text-center space-y-6">
+                            <div className="relative flex items-center justify-center">
+                                <div className="h-24 w-24 rounded-full border-4 border-primary/20" />
+                                <div
+                                    className="absolute h-24 w-24 rounded-full border-4 border-primary border-t-transparent animate-spin"
+                                />
+                                <span className="absolute text-xl font-bold text-primary">{isGenerating ? generationProgress : approvalProgress}%</span>
+                            </div>
+
+                            <div className="space-y-2">
+                                <h3 className="text-xl font-bold tracking-tight">{isGenerating ? 'Generating Payroll' : 'Approving & Recording Payments'}</h3>
+                                <p className="text-muted-foreground">
+                                    {isGenerating
+                                        ? 'Please wait while we process employee payslips. This may take a moment...'
+                                        : 'Please wait while we record salary expenses and update payment statuses...'}
+                                </p>
+                            </div>
+
+                            <div className="w-full bg-muted rounded-full h-3 overflow-hidden border">
+                                <div
+                                    className="bg-primary h-full transition-all duration-300 ease-out shadow-[0_0_10px_rgba(var(--primary),0.5)]"
+                                    style={{ width: `${isGenerating ? generationProgress : approvalProgress}%` }}
+                                />
+                            </div>
+
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest animate-pulse">Processing Database Entries...</p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 }
