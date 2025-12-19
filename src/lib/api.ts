@@ -812,16 +812,11 @@ export const createRole = async (
 
     if (roleError) throw roleError;
 
+    // Insert permissions
     if (permissionIds.length > 0) {
-        const rolePermissions = permissionIds.map(permId => ({
-            role_id: roleData.id,
-            permission_id: permId
-        }));
-
         const { error: permError } = await supabase
             .from('role_permissions')
-            .insert(rolePermissions);
-
+            .insert(permissionIds.map(pid => ({ role_id: roleData.id, permission_id: pid })));
         if (permError) throw permError;
     }
 
@@ -830,55 +825,37 @@ export const createRole = async (
 
 export const updateRole = async (
     id: string,
-    updates: { name?: string; description?: string },
-    permissionIds?: string[]
+    updates: { name: string; description: string },
+    permissionIds: string[]
 ) => {
-    // 1. Update Role Details
-    // 1. Update Role Details
-    const { data: roleData, error: roleError } = await supabase
+    // 1. Update Role details
+    const { data, error } = await supabase
         .from('roles')
         .update(updates)
         .eq('id', id)
-        .select();
+        .select()
+        .single();
 
-    if (roleError) throw roleError;
-    const updatedRole = roleData && roleData.length > 0 ? roleData[0] : null;
+    if (error) throw error;
 
-    if (!updatedRole) {
-        // If no row returned, it might be RLS or invalid ID. 
-        // But we can proceed to update permissions if we assume the user just has no visibility?
-        // Actually if we can't see it, we probably failed to update it or it doesn't exist.
-        // Let's assume success if no error, but return null or throw?
-        // Throwing might be better to debug.
-        throw new Error("Failed to update role or retrieve updated record (check permissions).");
-    }
+    // 2. Update Permissions (Delete all, insert new)
+    // This is simple but brute force.
+    const { error: delError } = await supabase
+        .from('role_permissions')
+        .delete()
+        .eq('role_id', id);
 
-    // 2. Update Permissions if provided
-    if (permissionIds) {
-        // Delete existing
-        const { error: delError } = await supabase
+    if (delError) throw delError;
+
+    if (permissionIds.length > 0) {
+        const { error: insError } = await supabase
             .from('role_permissions')
-            .delete()
-            .eq('role_id', id);
+            .insert(permissionIds.map(pid => ({ role_id: id, permission_id: pid })));
 
-        if (delError) throw delError;
-
-        // Insert new
-        if (permissionIds.length > 0) {
-            const rolePermissions = permissionIds.map(permId => ({
-                role_id: id,
-                permission_id: permId
-            }));
-
-            const { error: insError } = await supabase
-                .from('role_permissions')
-                .insert(rolePermissions);
-
-            if (insError) throw insError;
-        }
+        if (insError) throw insError;
     }
 
-    return updatedRole;
+    return data;
 };
 
 export const deleteRole = async (id: string) => {
@@ -889,4 +866,55 @@ export const deleteRole = async (id: string) => {
 
     if (error) throw error;
 };
+
+/* -------------------------------------------------------------------------- */
+/*                                 Inventory                                  */
+/* -------------------------------------------------------------------------- */
+
+export const getInventoryItems = async () => {
+    const { data, error } = await supabase
+        .from('inventory_items')
+        .select('*')
+        .order('name');
+
+    if (error) throw error;
+    return data as import('../types').InventoryItem[];
+};
+
+export const createInventoryItem = async (item: Omit<import('../types').InventoryItem, 'id' | 'created_at' | 'updated_at' | 'children'>) => {
+    const { data, error } = await supabase
+        .from('inventory_items')
+        .insert([item])
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as import('../types').InventoryItem;
+};
+
+export const updateInventoryItem = async (id: string, updates: Partial<import('../types').InventoryItem>) => {
+    const { data, error } = await supabase
+        .from('inventory_items')
+        .update({
+            ...updates,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as import('../types').InventoryItem;
+};
+
+export const deleteInventoryItem = async (id: string) => {
+    const { error } = await supabase
+        .from('inventory_items')
+        .delete()
+        .eq('id', id);
+
+    if (error) throw error;
+};
+
+
 
