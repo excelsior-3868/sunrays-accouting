@@ -222,14 +222,14 @@ export default function PayrollPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <h1 className="text-2xl font-bold tracking-tight">Payroll</h1>
 
-                <div className="flex items-center gap-2">
+                <div className="grid grid-cols-1 sm:flex items-center gap-2">
                     <select
                         value={monthFilter}
                         onChange={(e) => setMonthFilter(e.target.value)}
-                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        className="h-10 sm:h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring w-full sm:w-auto"
                     >
                         <option value="">All Months</option>
                         {['Baisakh', 'Jestha', 'Asar', 'Shrawan', 'Bhadra', 'Ashwin', 'Kartik', 'Mangsir', 'Poush', 'Magh', 'Falgun', 'Chaitra'].map(m => (
@@ -240,7 +240,7 @@ export default function PayrollPage() {
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value as any)}
-                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        className="h-10 sm:h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring w-full sm:w-auto"
                     >
                         <option value="All">All Status</option>
                         <option value="Draft">Draft (Not Paid)</option>
@@ -248,7 +248,7 @@ export default function PayrollPage() {
                     </select>
 
                     {can('payroll.manage') && (
-                        <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
+                        <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-10 sm:h-9 px-4 py-2 w-full sm:w-auto">
                             <Plus className="mr-2 h-4 w-4" /> Run Payroll
                         </button>
                     )}
@@ -397,23 +397,28 @@ export default function PayrollPage() {
             )}
 
             {viewingRun && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                    <div className="bg-background rounded-lg shadow-lg w-full max-w-4xl p-6 animate-in fade-in zoom-in duration-200 overflow-y-auto max-h-[90vh]">
-                        <div className="flex justify-between items-center mb-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 sm:p-6">
+                    <div className="bg-background rounded-lg shadow-lg w-full max-w-4xl p-4 sm:p-6 animate-in fade-in zoom-in duration-200 overflow-y-auto max-h-[90vh]">
+                        <div className="flex justify-between items-start mb-6">
                             <div>
-                                <h3 className="text-lg font-semibold">Payroll Review - {viewingRun.month}</h3>
-                                <p className="text-sm text-muted-foreground">{viewingRun.is_posted ? 'Posted' : 'Draft'} • {viewingRun.payslips?.length || 0} Employees</p>
+                                <h3 className="text-lg sm:text-xl font-bold">Payroll Review - {viewingRun.month}</h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] sm:text-xs font-bold uppercase tracking-wider ${viewingRun.is_posted ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                        {viewingRun.is_posted ? 'Posted' : 'Draft'}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">• {viewingRun.payslips?.length || 0} Employees</span>
+                                </div>
                             </div>
-                            <button onClick={() => setViewingRun(null)} className="inline-flex items-center justify-center h-8 w-8 rounded-full hover:bg-muted">
+                            <button onClick={() => setViewingRun(null)} className="inline-flex items-center justify-center h-8 w-8 rounded-full hover:bg-muted shrink-0">
                                 <span className="sr-only">Close</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
                         </div>
 
-                        <div className="rounded-md border">
-                            <table className="w-full text-sm">
+                        <div className="rounded-md border overflow-x-auto">
+                            <table className="w-full text-sm min-w-[600px]">
                                 <thead className="[&_tr]:border-b">
                                     <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
                                         <th className="h-10 px-4 text-left font-medium">Employee</th>
@@ -425,13 +430,13 @@ export default function PayrollPage() {
                                 </thead>
                                 <tbody>
                                     {viewingRun.payslips?.map((slip: any) => (
-                                        <tr key={slip.id} className="border-t">
+                                        <tr key={slip.id} className="border-t hover:bg-muted/30 transition-colors">
                                             <td className="p-3 font-medium">{slip.employee_name}</td>
-                                            <td className="p-3 text-right text-green-600">{slip.total_earnings?.toLocaleString()}</td>
-                                            <td className="p-3 text-right text-red-500">{slip.total_deductions?.toLocaleString()}</td>
-                                            <td className="p-3 text-right font-bold">{slip.net_salary?.toLocaleString()}</td>
+                                            <td className="p-3 text-right text-green-600 tabular-nums">NPR {slip.total_earnings?.toLocaleString()}</td>
+                                            <td className="p-3 text-right text-red-500 tabular-nums">NPR {slip.total_deductions?.toLocaleString()}</td>
+                                            <td className="p-3 text-right font-bold tabular-nums text-blue-600">NPR {slip.net_salary?.toLocaleString()}</td>
                                             <td className="p-3 text-center">
-                                                <span className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold ${slip.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                                <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase transition-colors ${slip.status === 'Paid' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-yellow-50 text-yellow-600 border border-yellow-200'}`}>
                                                     {slip.status}
                                                 </span>
                                             </td>
@@ -442,38 +447,39 @@ export default function PayrollPage() {
                         </div>
 
                         {!viewingRun.is_posted && (
-                            <div className="mt-4 flex items-center justify-between bg-muted/30 p-4 rounded-md border">
+                            <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/30 p-4 rounded-lg border border-primary/10">
                                 <div className="space-y-1">
-                                    <p className="text-sm font-medium">Payment Method</p>
-                                    <p className="text-xs text-muted-foreground">Select how salary will be paid.</p>
+                                    <p className="text-sm font-bold text-primary">Select Payment Method</p>
+                                    <p className="text-xs text-muted-foreground">This GL Head will be credited for the payments.</p>
                                 </div>
-                                <div className="w-[250px]">
+                                <div className="w-full sm:w-[280px]">
                                     <SearchableSelect
                                         options={[
-                                            { value: 'Cash', label: 'Cash', group: 'Methods' },
+                                            { value: 'Cash', label: 'Cash in Hand', group: 'Methods' },
                                             { value: 'Bank Account', label: 'Bank Account', group: 'Methods' },
-                                            { value: 'Digital Payment', label: 'Digital Payment', group: 'Methods' },
-                                            { value: 'Cheque', label: 'Cheque', group: 'Methods' },
+                                            { value: 'Digital Payment', label: 'E-Sewa / Khalti', group: 'Methods' },
+                                            { value: 'Cheque', label: 'Bank Cheque', group: 'Methods' },
                                         ]}
                                         value={selectedPaymentMethod}
                                         onChange={setSelectedPaymentMethod}
                                         placeholder="Select Payment Mode..."
+                                        className="w-full"
                                     />
                                 </div>
                             </div>
                         )}
 
-                        <div className="flex justify-end gap-2 mt-6">
-                            <button onClick={() => setViewingRun(null)} className="h-9 px-4 rounded-md border text-sm hover:bg-accent">Close</button>
+                        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 mt-8">
+                            <button onClick={() => setViewingRun(null)} className="h-10 sm:h-9 px-4 rounded-md border text-sm font-medium hover:bg-accent transition-colors w-full sm:w-auto">Close</button>
                             {!viewingRun.is_posted && can('payroll.manage') && (
                                 <button
                                     onClick={() => {
                                         handleApprove(viewingRun.id);
                                         setViewingRun(null);
                                     }}
-                                    className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90"
+                                    className="h-10 sm:h-9 px-6 rounded-md bg-primary text-primary-foreground text-sm font-bold shadow-sm hover:bg-primary/90 transition-all w-full sm:w-auto active:scale-95"
                                 >
-                                    Approve All & Pay
+                                    Approve & Process Payments
                                 </button>
                             )}
                         </div>

@@ -341,104 +341,86 @@ export default function InvoicesPage() {
             </div>
 
             {/* Filter Bar */}
-            <div className="flex flex-wrap items-center gap-4 bg-card p-4 rounded-lg border">
-                <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Filters:</span>
-                </div>
+            <div className="bg-card p-4 rounded-lg border shadow-sm">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                    <div className="flex items-center gap-2 shrink-0">
+                        <Filter className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-semibold">Filters</span>
+                    </div>
 
-                {/* Class Filter */}
-                <select
-                    value={classFilter}
-                    onChange={(e) => setClassFilter(e.target.value)}
-                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                    <option value="">All Classes</option>
-                    {['PG', 'Nursery', 'LKG', 'UKG'].map(c => (
-                        <option key={c} value={c}>Class {c}</option>
-                    ))}
-                </select>
-
-                {/* Month Filter */}
-                <select
-                    value={monthFilter}
-                    onChange={(e) => setMonthFilter(e.target.value)}
-                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                    <option value="">All Months</option>
-                    {['Baisakh', 'Jestha', 'Asar', 'Shrawan', 'Bhadra', 'Ashwin', 'Kartik', 'Mangsir', 'Poush', 'Magh', 'Falgun', 'Chaitra'].map(m => (
-                        <option key={m} value={m}>{m}</option>
-                    ))}
-                </select>
-
-                {/* Status Filter */}
-                <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                    <option value="">All Status</option>
-                    <option value="Paid">Paid</option>
-                    <option value="Unpaid">Unpaid</option>
-                    <option value="Partial">Partial</option>
-                    <option value="Void">Void</option>
-                </select>
-
-                <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <input
-                        type="search"
-                        placeholder="Search Student"
-                        value={listSearch}
-                        onChange={(e) => {
-                            setListSearch(e.target.value);
-                            setIsListSearchOpen(true);
-                        }}
-                        onFocus={() => setIsListSearchOpen(true)}
-                        onBlur={() => setTimeout(() => setIsListSearchOpen(false), 200)}
-                        onKeyDown={handleListKeyDown}
-                        className="flex h-9 w-full rounded-md border border-input bg-background pl-9 px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    />
-                    {isListSearchOpen && listSearch.length < 1 && listFilteredStudents.length > 0 && ( /* Show when empty on focus */
-                        <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground rounded-md border shadow-md animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
-                            {listFilteredStudents.map((student, index) => (
-                                <div
-                                    key={student.id}
-                                    className={`px-3 py-2 hover:bg-accent cursor-pointer text-sm ${index === listSelectedIndex ? 'bg-accent' : ''}`}
-                                    onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        setListSearch(student.name);
-                                        setIsListSearchOpen(false);
-                                    }}
-                                >
-                                    <div className="font-medium">{student.name}</div>
-                                    <div className="text-xs text-muted-foreground">Class: {student.class}</div>
-                                </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
+                        {/* Class Filter */}
+                        <select
+                            value={classFilter}
+                            onChange={(e) => setClassFilter(e.target.value)}
+                            className="h-10 sm:h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:ring-1 focus:ring-ring w-full"
+                        >
+                            <option value="">All Classes</option>
+                            {['PG', 'Nursery', 'LKG', 'UKG'].map(c => (
+                                <option key={c} value={c}>Class {c}</option>
                             ))}
-                        </div>
-                    )}
-                    {isListSearchOpen && listSearch.length >= 1 && ( /* Show matches when typing */
-                        <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground rounded-md border shadow-md animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
-                            {listFilteredStudents.length > 0 ? (
-                                listFilteredStudents.map((student, index) => (
+                        </select>
+
+                        {/* Month Filter */}
+                        <select
+                            value={monthFilter}
+                            onChange={(e) => setMonthFilter(e.target.value)}
+                            className="h-10 sm:h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:ring-1 focus:ring-ring w-full"
+                        >
+                            <option value="">All Months</option>
+                            {['Baisakh', 'Jestha', 'Asar', 'Shrawan', 'Bhadra', 'Ashwin', 'Kartik', 'Mangsir', 'Poush', 'Magh', 'Falgun', 'Chaitra'].map(m => (
+                                <option key={m} value={m}>{m}</option>
+                            ))}
+                        </select>
+
+                        {/* Status Filter */}
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="h-10 sm:h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:ring-1 focus:ring-ring w-full"
+                        >
+                            <option value="">All Status</option>
+                            <option value="Paid">Paid</option>
+                            <option value="Unpaid">Unpaid</option>
+                            <option value="Partial">Partial</option>
+                            <option value="Void">Void</option>
+                        </select>
+                    </div>
+
+                    <div className="relative w-full lg:max-w-sm shrink-0">
+                        <Search className="absolute left-3 top-3 lg:top-2.5 h-4 w-4 text-muted-foreground" />
+                        <input
+                            type="search"
+                            placeholder="Search Student..."
+                            value={listSearch}
+                            onChange={(e) => {
+                                setListSearch(e.target.value);
+                                setIsListSearchOpen(true);
+                            }}
+                            onFocus={() => setIsListSearchOpen(true)}
+                            onBlur={() => setTimeout(() => setIsListSearchOpen(false), 200)}
+                            onKeyDown={handleListKeyDown}
+                            className="flex h-10 lg:h-9 w-full rounded-md border border-input bg-background pl-10 px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus:ring-1 focus:ring-ring"
+                        />
+                        {isListSearchOpen && listFilteredStudents.length > 0 && (
+                            <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground rounded-md border shadow-lg animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
+                                {listFilteredStudents.map((student, index) => (
                                     <div
                                         key={student.id}
-                                        className={`px-3 py-2 hover:bg-accent cursor-pointer text-sm ${index === listSelectedIndex ? 'bg-accent' : ''}`}
+                                        className={`px-3 py-2 hover:bg-accent cursor-pointer text-sm border-b last:border-0 ${index === listSelectedIndex ? 'bg-accent' : ''}`}
                                         onMouseDown={(e) => {
                                             e.preventDefault();
                                             setListSearch(student.name);
                                             setIsListSearchOpen(false);
                                         }}
                                     >
-                                        <div className="font-medium">{student.name}</div>
-                                        <div className="text-xs text-muted-foreground">Class: {student.class}</div>
+                                        <div className="font-medium text-blue-600">{student.name}</div>
+                                        <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Class: {student.class}</div>
                                     </div>
-                                ))
-                            ) : (
-                                <div className="p-2 text-sm text-muted-foreground text-center">No students found</div>
-                            )}
-                        </div>
-                    )}
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 

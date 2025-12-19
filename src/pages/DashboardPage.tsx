@@ -144,7 +144,7 @@ export default function DashboardPage() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
                 <StatCard
                     title="Total Assessed Fees"
                     value={stats.totalInvoiced}
@@ -183,8 +183,8 @@ export default function DashboardPage() {
             </div>
 
             {/* Recent Activity */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <div className="col-span-4 rounded-xl border bg-card text-card-foreground shadow">
+            <div className="grid gap-4 lg:grid-cols-7">
+                <div className="lg:col-span-4 rounded-xl border bg-card text-card-foreground shadow">
                     <div className="p-6 flex flex-col space-y-1.5">
                         <h3 className="font-semibold leading-none tracking-tight">Recent Transactions</h3>
                         <p className="text-sm text-muted-foreground">Latest income and expenses.</p>
@@ -192,18 +192,18 @@ export default function DashboardPage() {
                     <div className="p-6 pt-0">
                         <div className="space-y-4">
                             {stats.recentTxns.map((txn, i) => (
-                                <div key={i} className="flex items-center justify-between">
+                                <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b sm:border-0 pb-2 sm:pb-0">
                                     <div className="flex items-center gap-4">
-                                        <div className={`flex h-9 w-9 items-center justify-center rounded-full border ${txn.type === 'Income' ? 'bg-green-100' : 'bg-red-100'}`}>
+                                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border ${txn.type === 'Income' ? 'bg-green-100' : 'bg-red-100'}`}>
                                             {txn.type === 'Income' ? <TrendingUp className="h-4 w-4 text-green-600" /> : <TrendingDown className="h-4 w-4 text-red-600" />}
                                         </div>
-                                        <div className="space-y-1">
-                                            <p className="text-sm font-medium leading-none">{txn.description}</p>
+                                        <div className="space-y-1 overflow-hidden">
+                                            <p className="text-sm font-medium leading-none truncate">{txn.description}</p>
                                             <p className="text-xs text-muted-foreground">{txn.date}</p>
                                         </div>
                                     </div>
-                                    <div className={`font-medium ${txn.type === 'Income' ? 'text-green-600' : 'text-red-600'}`}>
-                                        {txn.type === 'Income' ? '+' : '-'} NPR {txn.amount}
+                                    <div className={`font-medium self-end sm:self-center ${txn.type === 'Income' ? 'text-green-600' : 'text-red-600'}`}>
+                                        {txn.type === 'Income' ? '+' : '-'} NPR {txn.amount.toLocaleString()}
                                     </div>
                                 </div>
                             ))}
@@ -213,12 +213,12 @@ export default function DashboardPage() {
                 </div>
 
 
-                <div className="col-span-3 rounded-xl border bg-card text-card-foreground shadow">
+                <div className="lg:col-span-3 rounded-xl border bg-card text-card-foreground shadow">
                     <div className="p-6 flex flex-col space-y-1.5">
                         <h3 className="font-semibold leading-none tracking-tight">Quick Stats</h3>
                         <p className="text-sm text-muted-foreground">Overview of key metrics</p>
                     </div>
-                    <div className="p-6 pt-0 grid grid-cols-2 gap-3">
+                    <div className="p-6 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <InfoCard
                             title="Today"
                             value={stats.transactionsToday}

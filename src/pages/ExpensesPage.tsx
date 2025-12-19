@@ -160,37 +160,40 @@ export default function ExpensesPage() {
             </div>
 
             {/* Filter Bar */}
-            <div className="flex flex-wrap items-center gap-4 bg-card p-4 rounded-lg border justify-between">
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <Filter className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Filters:</span>
+            <div className="bg-card p-4 rounded-lg border shadow-sm space-y-4">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
+                        <div className="flex items-center gap-2 shrink-0">
+                            <Filter className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-semibold">Filter by Head</span>
+                        </div>
+                        <div className="w-full sm:max-w-[400px]">
+                            <SearchableSelect
+                                options={[
+                                    { value: '', label: 'All Expense Heads', group: 'Filter' },
+                                    ...expenseOptions
+                                ]}
+                                value={selectedHeadFilter}
+                                onChange={handleFilterChange}
+                                placeholder="Search Expense Heads..."
+                                className="w-full"
+                            />
+                        </div>
                     </div>
-                    <div className="w-[300px]">
-                        <SearchableSelect
-                            options={[
-                                { value: '', label: 'All Expense Heads', group: 'Filter' },
-                                ...expenseOptions
-                            ]}
-                            value={selectedHeadFilter}
-                            onChange={handleFilterChange}
-                            placeholder="Search Expense Heads..."
-                        />
-                    </div>
-                </div>
 
-                {/* Total Amount Display */}
-                <div className="flex items-center gap-2 bg-red-600 px-4 py-2 rounded-md">
-                    <span className="text-sm font-medium text-white">
-                        {selectedHeadFilter
-                            ? `${expenseOptions.find(opt => opt.value === selectedHeadFilter)?.label || 'Selected'} Total:`
-                            : 'Total Expenses:'}
-                    </span>
-                    <span className="text-lg font-bold text-white">
-                        NPR {filteredExpenses
-                            .reduce((sum, expense) => sum + expense.amount, 0)
-                            .toLocaleString()}
-                    </span>
+                    {/* Total Amount Display */}
+                    <div className="flex items-center justify-between sm:justify-end gap-3 bg-red-50 border border-red-100 px-4 py-2.5 rounded-lg shadow-sm">
+                        <span className="text-xs sm:text-sm font-bold text-red-700 uppercase tracking-wider">
+                            {selectedHeadFilter
+                                ? `${expenseOptions.find(opt => opt.value === selectedHeadFilter)?.label || 'Selected'} Total`
+                                : 'Grand Total Expenses'}
+                        </span>
+                        <span className="text-lg sm:text-xl font-black text-red-600 tabular-nums">
+                            NPR {filteredExpenses
+                                .reduce((sum, expense) => sum + expense.amount, 0)
+                                .toLocaleString()}
+                        </span>
+                    </div>
                 </div>
             </div>
 

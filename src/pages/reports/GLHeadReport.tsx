@@ -270,37 +270,41 @@ export default function GLHeadReport() {
                                 <p>Please select a GL Head to view the monthly report</p>
                             </div>
                         ) : (
-                            <div className="relative h-[400px] mt-4 flex items-end gap-2 md:gap-4 px-2">
-                                {/* Grid Lines */}
-                                <div className="absolute inset-x-0 top-0 bottom-8 flex flex-col justify-between pointer-events-none">
-                                    {[0, 0.25, 0.5, 0.75, 1].map((p) => (
-                                        <div key={p} className="w-full border-t border-muted-foreground/10 relative">
-                                            <span className="absolute left-1 -top-2.5 text-[11px] text-muted-foreground tabular-nums font-extrabold">
-                                                {Math.round(maxMonthlyAmount * (1 - p)).toLocaleString()}
+                            <div className="overflow-x-auto pb-4 -mx-2 px-2">
+                                <div className="relative h-[400px] mt-4 flex items-end gap-1 md:gap-4 min-w-[600px] sm:min-w-0 px-2 lg:px-4">
+                                    {/* Grid Lines */}
+                                    <div className="absolute inset-x-0 top-0 bottom-8 flex flex-col justify-between pointer-events-none">
+                                        {[0, 0.25, 0.5, 0.75, 1].map((p) => (
+                                            <div key={p} className="w-full border-t border-muted-foreground/10 relative">
+                                                <span className="absolute left-1 -top-2.5 text-[10px] md:text-[11px] text-muted-foreground tabular-nums font-extrabold bg-card px-1">
+                                                    {Math.round(maxMonthlyAmount * (1 - p)).toLocaleString()}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {monthlyData.map((item, i) => (
+                                        <div key={i} className="flex-1 flex flex-col items-center gap-2 group relative z-10">
+                                            <div className="w-full relative flex items-end justify-center min-h-[300px]">
+                                                {item.amount > 0 && (
+                                                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground px-2 py-1 rounded shadow-md text-[10px] md:text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 font-bold border">
+                                                        {item.amount.toLocaleString()}
+                                                    </div>
+                                                )}
+                                                <div
+                                                    className={`w-full max-w-[20px] md:max-w-[40px] rounded-t-lg transition-all duration-500 ease-out hover:brightness-110 cursor-pointer ${glHeads.find(h => h.id === selectedGLHeadId)?.type === 'Expense' ? 'bg-red-500 hover:bg-red-400' : 'bg-primary hover:bg-primary/80'}`}
+                                                    style={{
+                                                        height: maxMonthlyAmount > 0 ? `${(item.amount / maxMonthlyAmount) * 300}px` : '4px',
+                                                        opacity: item.amount === 0 ? 0.3 : 1
+                                                    }}
+                                                />
+                                            </div>
+                                            <span className="text-[10px] md:text-sm font-bold text-muted-foreground rotate-45 md:rotate-0 mt-3 whitespace-nowrap">
+                                                {item.month}
                                             </span>
                                         </div>
                                     ))}
                                 </div>
-
-                                {monthlyData.map((item, i) => (
-                                    <div key={i} className="flex-1 flex flex-col items-center gap-2 group relative">
-                                        <div className="w-full relative flex items-end justify-center min-h-[300px]">
-                                            <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground px-2 py-1 rounded shadow-md text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 font-bold border">
-                                                {item.amount.toLocaleString()}
-                                            </div>
-                                            <div
-                                                className={`w-full max-w-[40px] rounded-t-lg transition-all duration-500 ease-out hover:brightness-110 cursor-pointer ${glHeads.find(h => h.id === selectedGLHeadId)?.type === 'Expense' ? 'bg-red-500 hover:bg-red-400' : 'bg-primary hover:bg-primary/80'}`}
-                                                style={{
-                                                    height: maxMonthlyAmount > 0 ? `${(item.amount / maxMonthlyAmount) * 300}px` : '4px',
-                                                    opacity: item.amount === 0 ? 0.3 : 1
-                                                }}
-                                            />
-                                        </div>
-                                        <span className="text-[11px] md:text-sm font-bold text-muted-foreground rotate-45 md:rotate-0 mt-2">
-                                            {item.month}
-                                        </span>
-                                    </div>
-                                ))}
                             </div>
                         )}
                         <div className="mt-12 text-center text-xs text-muted-foreground border-t pt-4">

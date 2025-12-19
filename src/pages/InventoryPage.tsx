@@ -160,43 +160,49 @@ export default function InventoryPage() {
     const renderTree = (nodes: InventoryItem[], level = 0) => {
         return nodes.map(node => (
             <div key={node.id}>
-                <div className={cn("flex items-center py-2 px-2 hover:bg-muted/50 rounded-md group text-sm", level > 0 && "ml-6")}>
-                    <div className="flex-1 flex items-center gap-2">
+                <div className={cn("flex items-center py-3 px-2 hover:bg-muted/50 rounded-md group text-sm", level > 0 && "ml-3 sm:ml-6")}>
+                    <div className="flex-1 flex items-center gap-2 min-w-0">
                         {node.children && node.children.length > 0 ? (
-                            <button onClick={() => toggleExpand(node.id)} className="p-1 hover:bg-muted rounded text-muted-foreground">
+                            <button onClick={() => toggleExpand(node.id)} className="p-1 hover:bg-muted rounded text-muted-foreground shrink-0">
                                 {expandedNodes.has(node.id) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                             </button>
-                        ) : <span className="w-6" />}
+                        ) : <span className="w-6 shrink-0" />}
 
-                        {node.children && node.children.length > 0 ? (
-                            <Folder className="h-4 w-4 text-blue-500/80" />
-                        ) : (
-                            <Box className="h-4 w-4 text-emerald-500/80" />
-                        )}
+                        <div className="shrink-0">
+                            {node.children && node.children.length > 0 ? (
+                                <Folder className="h-4 w-4 text-blue-500/80" />
+                            ) : (
+                                <Box className="h-4 w-4 text-emerald-500/80" />
+                            )}
+                        </div>
 
-                        <span className="font-medium">{node.name}</span>
-                        {node.quantity > 0 && (
-                            <span className="text-xs ml-2 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold border">
-                                Qty: {node.quantity} {node.unit}
-                            </span>
-                        )}
-                        {node.description && <span className="text-xs text-muted-foreground ml-2 hidden sm:inline-block truncate max-w-[200px]">- {node.description}</span>}
+                        <div className="flex flex-col sm:flex-row sm:items-center min-w-0 flex-1">
+                            <span className="font-medium truncate">{node.name}</span>
+                            <div className="flex items-center gap-2 mt-0.5 sm:mt-0">
+                                {node.quantity > 0 && (
+                                    <span className="text-[10px] sm:text-xs sm:ml-2 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold border shrink-0">
+                                        Qty: {node.quantity} {node.unit}
+                                    </span>
+                                )}
+                                {node.description && <span className="text-[10px] sm:text-xs text-muted-foreground sm:ml-2 truncate max-w-[120px] sm:max-w-[200px]">{level > 0 ? "" : `- ${node.description}`}</span>}
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="opacity-0 group-hover:opacity-100 flex gap-1">
-                        <button title="Add Stock Item" onClick={() => handleAddChild(node.id)} className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-green-50 text-green-600 hover:bg-green-100 transition-colors">
-                            <Plus className="h-4 w-4" />
+                    <div className="opacity-100 sm:opacity-0 group-hover:opacity-100 flex gap-1 ml-2 shrink-0">
+                        <button title="Add Stock Item" onClick={() => handleAddChild(node.id)} className="h-7 w-7 sm:h-8 sm:w-8 inline-flex items-center justify-center rounded-md bg-green-50 text-green-600 hover:bg-green-100 transition-colors">
+                            <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </button>
-                        <button title="Edit" onClick={() => handleEdit(node)} className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors">
-                            <Pencil className="h-4 w-4" />
+                        <button title="Edit" onClick={() => handleEdit(node)} className="h-7 w-7 sm:h-8 sm:w-8 inline-flex items-center justify-center rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors">
+                            <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </button>
-                        <button title="Delete" onClick={() => handleDelete(node.id, node.name)} className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
-                            <Trash2 className="h-4 w-4" />
+                        <button title="Delete" onClick={() => handleDelete(node.id, node.name)} className="h-7 w-7 sm:h-8 sm:w-8 inline-flex items-center justify-center rounded-md bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
+                            <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </button>
                     </div>
                 </div>
                 {node.children && node.children.length > 0 && expandedNodes.has(node.id) && (
-                    <div className="border-l border-border/50 ml-5 pl-1">
+                    <div className="border-l border-border/50 ml-3 sm:ml-5 pl-1">
                         {renderTree(node.children, level + 1)}
                     </div>
                 )}

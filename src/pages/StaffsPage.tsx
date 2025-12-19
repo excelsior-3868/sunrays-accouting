@@ -219,80 +219,97 @@ export default function StaffsPage() {
 
             {/* Search */}
             {/* Filter Bar */}
-            <div className="flex flex-wrap items-center gap-4 bg-card p-4 rounded-lg border">
-                <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Filters:</span>
-                </div>
-                <div className="relative w-full max-w-sm">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <input
-                        placeholder={`Search ${activeTab}...`}
-                        value={searchQuery}
-                        onChange={(e) => {
-                            setSearchQuery(e.target.value);
-                            setIsSearchOpen(true);
-                        }}
-                        onFocus={() => setIsSearchOpen(true)}
-                        onBlur={() => setTimeout(() => setIsSearchOpen(false), 200)}
-                        onKeyDown={handleKeyDown}
-                        className="pl-8 flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    />
-                    {isSearchOpen && (searchQuery.length > 0 || filteredList.length > 0) && (
-                        <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground rounded-md border shadow-md animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
-                            {filteredList.length > 0 ? (
-                                filteredList.slice(0, 10).map((item: any, index: number) => (
-                                    <div
-                                        key={item.id}
-                                        className={`px-3 py-2 cursor-pointer text-sm ${index === selectedIndex ? "bg-accent" : "hover:bg-accent"}`}
-                                        onMouseDown={(e) => {
-                                            e.preventDefault();
-                                            setSearchQuery(`${item.first_name} ${item.last_name}`);
-                                            setIsSearchOpen(false);
-                                        }}
-                                    >
-                                        <div className="font-medium">{item.first_name} {item.last_name}</div>
-                                        <div className="text-xs text-muted-foreground">{item.designation} - {item.category}</div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="p-2 text-sm text-muted-foreground text-center">No results found.</div>
-                            )}
-                        </div>
-                    )}
+            <div className="bg-card p-4 rounded-lg border shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="flex items-center gap-2 shrink-0">
+                        <Filter className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-semibold">Quick Search</span>
+                    </div>
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <input
+                            placeholder={`Search ${activeTab === 'teachers' ? 'Teachers' : 'Support Staff'}...`}
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setIsSearchOpen(true);
+                            }}
+                            onFocus={() => setIsSearchOpen(true)}
+                            onBlur={() => setTimeout(() => setIsSearchOpen(false), 200)}
+                            onKeyDown={handleKeyDown}
+                            className="pl-10 flex h-10 sm:h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:ring-1 focus:ring-ring"
+                        />
+                        {isSearchOpen && (searchQuery.length > 0 || filteredList.length > 0) && (
+                            <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground rounded-md border shadow-lg animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
+                                {filteredList.length > 0 ? (
+                                    filteredList.slice(0, 10).map((item: any, index: number) => (
+                                        <div
+                                            key={item.id}
+                                            className={`px-4 py-2.5 cursor-pointer text-sm border-b last:border-0 ${index === selectedIndex ? "bg-accent" : "hover:bg-accent"}`}
+                                            onMouseDown={(e) => {
+                                                e.preventDefault();
+                                                setSearchQuery(`${item.first_name} ${item.last_name}`);
+                                                setIsSearchOpen(false);
+                                            }}
+                                        >
+                                            <div className="font-bold text-blue-600">{item.first_name} {item.last_name}</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">{item.designation} • {item.category}</div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="p-4 text-sm text-muted-foreground text-center">No results found.</div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {/* List */}
-            <div className="rounded-md border bg-card overflow-hidden">
-                <div className="grid grid-cols-12 gap-4 p-4 border-b font-medium text-sm transition-colors bg-blue-600 text-primary-foreground">
+            <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+                <div className="hidden sm:grid grid-cols-12 gap-4 p-4 border-b font-bold text-xs uppercase tracking-wider transition-colors bg-blue-600 text-primary-foreground">
                     <div className="col-span-4">Name</div>
-                    <div className="col-span-3">Role/Designation</div>
-                    <div className="col-span-3">Contact</div>
+                    <div className="col-span-3">Role / Designation</div>
+                    <div className="col-span-3">Contact Information</div>
                     <div className="col-span-2 text-right">Actions</div>
                 </div>
-                {filteredList.length > 0 ? filteredList.map((item: any) => (
-                    <div key={item.id} className="grid grid-cols-12 gap-4 p-4 border-b last:border-0 text-sm items-center hover:bg-muted/50 transition-colors">
-                        <div className="col-span-4 font-medium">{item.first_name} {item.last_name}</div>
-                        <div className="col-span-3">
-                            <div className="text-foreground">{item.designation}</div>
-                            <div className="text-xs text-muted-foreground">{item.category}</div>
-                        </div>
-                        <div className="col-span-3">
-                            <div>{item.email || '-'}</div>
-                            <div className="text-muted-foreground">{item.phone || item.mobile_number || '-'}</div>
-                        </div>
-                        <div className="col-span-2 flex justify-end gap-2">
-                            <button onClick={() => handleEdit(item)} className="p-2 hover:bg-muted rounded-md text-blue-600">
-                                <Pencil className="h-4 w-4" />
-                            </button>
-                            <button onClick={() => handleDelete(item.id)} className="p-2 hover:bg-muted rounded-md text-red-600">
-                                <Trash2 className="h-4 w-4" />
-                            </button>
-                        </div>
+                {filteredList.length > 0 ? (
+                    <div className="divide-y">
+                        {filteredList.map((item: any) => (
+                            <div key={item.id} className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4 p-4 text-sm items-center hover:bg-muted/30 transition-colors">
+                                <div className="sm:col-span-4 flex flex-col">
+                                    <span className="font-bold text-base sm:text-sm text-foreground">{item.first_name} {item.last_name}</span>
+                                    <span className="sm:hidden text-xs text-muted-foreground">{item.designation} ({item.category})</span>
+                                </div>
+                                <div className="hidden sm:block sm:col-span-3">
+                                    <div className="font-medium text-foreground">{item.designation}</div>
+                                    <div className="text-[10px] uppercase tracking-tighter text-muted-foreground font-bold">{item.category}</div>
+                                </div>
+                                <div className="sm:col-span-3">
+                                    <div className="flex items-center gap-1.5 text-muted-foreground sm:text-foreground">
+                                        <span className="sm:hidden font-medium text-xs">Ph:</span>
+                                        {item.phone || item.mobile_number || '-'}
+                                    </div>
+                                    {item.email && (
+                                        <div className="hidden sm:block text-xs text-muted-foreground truncate" title={item.email}>{item.email}</div>
+                                    )}
+                                </div>
+                                <div className="sm:col-span-2 flex justify-end gap-2 mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0">
+                                    <button onClick={() => handleEdit(item)} className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors" title="Edit">
+                                        <Pencil className="h-4 w-4" />
+                                    </button>
+                                    <button onClick={() => handleDelete(item.id)} className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-red-100 bg-red-50 text-red-600 hover:bg-red-100 transition-colors" title="Delete">
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                )) : (
-                    <div className="p-8 text-center text-muted-foreground">No records found.</div>
+                ) : (
+                    <div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
+                        <Search className="h-10 w-10 mb-2 opacity-10" />
+                        <p className="font-medium">No records found matching your search.</p>
+                    </div>
                 )}
             </div>
 
