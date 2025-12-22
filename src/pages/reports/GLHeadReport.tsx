@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Loader2, BarChart3 } from 'lucide-react';
+import { Loader2, BarChart3, TrendingUp, TrendingDown } from 'lucide-react';
 import { getPayments, getExpenses, getGLHeads } from '@/lib/api';
 import { type GLHead } from '@/types';
 import NepaliDate from 'nepali-date-converter';
@@ -27,7 +27,7 @@ const NEPAL_MONTHS_BS = [
 export default function GLHeadReport() {
     const [loading, setLoading] = useState(true);
     const [mode, setMode] = useState<ReportMode>('month');
-    const [activeView, setActiveView] = useState<'chart' | 'table'>('chart');
+    const [activeView, setActiveView] = useState<'chart' | 'table'>('table');
     const [selectedGLHeadId, setSelectedGLHeadId] = useState<string>('');
 
     // Data
@@ -128,7 +128,7 @@ export default function GLHeadReport() {
         }
     }, [mode, startDate, endDate, selectedYear, selectedMonth]);
 
-    const reportData = useMemo(() => {
+    const { incomeItems, expenseItems, totalIncome, totalExpense } = useMemo(() => {
         const { start, end } = dateRange;
         const filtered = transactions.filter((t: any) => {
             const d = new Date(t.date);
@@ -136,34 +136,48 @@ export default function GLHeadReport() {
         });
 
         const grouped = new Map<string, number>();
-        let totalSum = 0;
-
         filtered.forEach((t: any) => {
             if (!t.gl_head_id) return;
             const current = grouped.get(t.gl_head_id) || 0;
             grouped.set(t.gl_head_id, current + t.amount);
-            totalSum += t.amount;
         });
 
-        const result: GLTotal[] = [];
+        const income: GLTotal[] = [];
+        const expense: GLTotal[] = [];
+        let tInc = 0;
+        let tExp = 0;
+
         glHeads.forEach(head => {
             const amount = grouped.get(head.id) || 0;
-            if (amount !== 0) {
-                result.push({
-                    id: head.id,
-                    name: head.name,
-                    code: head.code,
-                    type: head.type,
-                    amount: amount,
-                    percentage: totalSum > 0 ? (amount / totalSum) * 100 : 0
-                });
+            if (amount === 0) return;
+
+            const item: GLTotal = {
+                id: head.id,
+                name: head.name,
+                code: head.code,
+                type: head.type,
+                amount: amount,
+                percentage: 0
+            };
+
+            if (head.type === 'Income') {
+                income.push(item);
+                tInc += amount;
+            } else if (head.type === 'Expense') {
+                expense.push(item);
+                tExp += amount;
             }
         });
 
-        return result.sort((a, b) => {
-            if (b.amount !== a.amount) return b.amount - a.amount;
-            return a.name.localeCompare(b.name);
-        });
+        income.forEach(item => item.percentage = tInc > 0 ? (item.amount / tInc) * 100 : 0);
+        expense.forEach(item => item.percentage = tExp > 0 ? (item.amount / tExp) * 100 : 0);
+
+        return {
+            incomeItems: income.sort((a, b) => b.amount - a.amount),
+            expenseItems: expense.sort((a, b) => b.amount - a.amount),
+            totalIncome: tInc,
+            totalExpense: tExp
+        };
     }, [transactions, dateRange, glHeads]);
 
     const monthlyData = useMemo(() => {
@@ -212,8 +226,9 @@ export default function GLHeadReport() {
     const years = [currentBsDate.getYear() - 1, currentBsDate.getYear(), currentBsDate.getYear() + 1];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-2">
             <h1 className="text-2xl font-bold tracking-tight">GL Head Report</h1>
+
 
             {/* Tabs */}
             <div className="flex gap-2 border-b">
@@ -221,7 +236,7 @@ export default function GLHeadReport() {
                     variant="ghost"
                     onClick={() => setActiveView('chart')}
                     className={cn(
-                        "rounded-none border-b-2 bg-transparent px-4 py-2 font-medium hover:bg-transparent",
+                        "rounded-none border-b-2 bg-transparent px-4 py-2 font-medium hover:bg-transparent transition-all",
                         activeView === 'chart' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
                     )}
                 >
@@ -231,7 +246,7 @@ export default function GLHeadReport() {
                     variant="ghost"
                     onClick={() => setActiveView('table')}
                     className={cn(
-                        "rounded-none border-b-2 bg-transparent px-4 py-2 font-medium hover:bg-transparent",
+                        "rounded-none border-b-2 bg-transparent px-4 py-2 font-medium hover:bg-transparent transition-all",
                         activeView === 'table' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
                     )}
                 >
@@ -241,7 +256,7 @@ export default function GLHeadReport() {
 
             {/* Content */}
             {activeView === 'chart' ? (
-                <div className="space-y-6">
+                <div className="space-y-2">
                     {/* GL Selection for Chart */}
                     <div className="rounded-xl border bg-card text-card-foreground shadow p-4">
                         <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -281,7 +296,7 @@ export default function GLHeadReport() {
 
                     {/* Bar Graph */}
                     <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-                        <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-2">
                                 <BarChart3 className="h-5 w-5 text-primary" />
                                 <h3 className="font-semibold text-lg">
@@ -351,15 +366,15 @@ export default function GLHeadReport() {
                     </div>
                 </div>
             ) : (
-                <div className="space-y-6">
-                    {/* Controls Moved Inside Table Tab */}
-                    <div className="flex flex-col md:flex-row gap-4 bg-card p-4 rounded-lg border">
-                        <div className="flex rounded-md border bg-muted p-1 h-fit">
+                <div className="space-y-2">
+                    {/* Filters Header - Moved here */}
+                    <div className="flex flex-col md:flex-row gap-4 bg-muted/30 p-2 rounded-xl border">
+                        <div className="flex rounded-md border bg-muted/50 p-1 h-fit">
                             <Button
                                 variant="ghost"
                                 onClick={() => setMode('month')}
                                 className={cn(
-                                    "px-3 py-1 text-sm font-medium rounded-sm transition-all h-8",
+                                    "px-3 py-1 text-xs font-medium rounded-sm transition-all h-7",
                                     mode === 'month' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
                                 )}
                             >
@@ -369,7 +384,7 @@ export default function GLHeadReport() {
                                 variant="ghost"
                                 onClick={() => setMode('date')}
                                 className={cn(
-                                    "px-3 py-1 text-sm font-medium rounded-sm transition-all h-8",
+                                    "px-3 py-1 text-xs font-medium rounded-sm transition-all h-7",
                                     mode === 'date' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
                                 )}
                             >
@@ -384,14 +399,14 @@ export default function GLHeadReport() {
                                 <select
                                     value={selectedYear}
                                     onChange={(e) => setSelectedYear(Number(e.target.value))}
-                                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm font-bold"
+                                    className="h-8 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm font-bold"
                                 >
                                     {years.map(y => <option key={y} value={y}>{y}</option>)}
                                 </select>
                                 <select
                                     value={selectedMonth}
                                     onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm font-bold"
+                                    className="h-8 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm font-bold"
                                 >
                                     {NEPAL_MONTHS_BS.map((m, i) => <option key={i} value={i}>{m}</option>)}
                                 </select>
@@ -403,7 +418,7 @@ export default function GLHeadReport() {
                                     onChange={setStartDate}
                                     onClear={() => setStartDate('')}
                                     placeholder="Start Date"
-                                    className="w-[140px]"
+                                    className="w-[140px] h-8 text-xs"
                                 />
                                 <span className="text-muted-foreground">-</span>
                                 <NepaliDatePicker
@@ -411,51 +426,128 @@ export default function GLHeadReport() {
                                     onChange={setEndDate}
                                     onClear={() => setEndDate('')}
                                     placeholder="End Date"
-                                    className="w-[140px]"
+                                    className="w-[140px] h-8 text-xs"
                                 />
                             </div>
                         )}
                     </div>
 
-                    <div className="rounded-xl border bg-card text-card-foreground shadow overflow-hidden">
-                        <table className="w-full caption-bottom text-sm">
-                            <thead className="[&_tr]:border-b">
-                                <tr className="border-b bg-muted/50 transition-colors">
-                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">GL Head</th>
-                                    <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {reportData.map((item) => (
-                                    <tr key={item.id} className="border-b transition-colors hover:bg-muted/50">
-                                        <td className="p-4 align-middle">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-muted rounded-md text-muted-foreground">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-medium text-sm">{item.name}</span>
-                                                    {item.code && (
-                                                        <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
-                                                            {item.code}
-                                                        </span>
-                                                    )}
-                                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border ml-1 ${item.type === 'Expense' ? 'border-red-200 bg-red-50 text-red-700' :
-                                                        item.type === 'Income' ? 'border-green-200 bg-green-50 text-green-700' :
-                                                            'border-blue-200 bg-blue-50 text-blue-700'
-                                                        }`}>
-                                                        {item.type}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="p-4 align-middle text-right font-bold">
-                                            {item.amount.toLocaleString()}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Income Table */}
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 px-1">
+                                <TrendingUp className="h-4 w-4 text-emerald-500" />
+                                <h3 className="font-semibold text-sm">Income Breakdown</h3>
+                            </div>
+                            <div className="rounded-xl border bg-card text-card-foreground shadow overflow-hidden">
+                                <table className="w-full caption-bottom text-sm">
+                                    <thead className="[&_tr]:border-b">
+                                        <tr className="border-b bg-primary text-white">
+                                            <th className="h-10 px-4 text-left align-middle font-semibold text-xs uppercase tracking-wider">GL Head</th>
+                                            <th className="h-10 px-4 text-right align-middle font-semibold text-xs uppercase tracking-wider">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y">
+                                        {incomeItems.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={2} className="h-24 text-center text-muted-foreground italic">No income data found</td>
+                                            </tr>
+                                        ) : (
+                                            incomeItems.map((item) => (
+                                                <tr key={item.id} className="transition-colors hover:bg-muted/50 group">
+                                                    <td className="p-4 align-middle">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium text-sm text-foreground">{item.name}</span>
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                {item.code && (
+                                                                    <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 rounded">{item.code}</span>
+                                                                )}
+                                                                <div className="w-24 h-1 bg-muted rounded-full overflow-hidden">
+                                                                    <div
+                                                                        className="h-full bg-emerald-500 rounded-full"
+                                                                        style={{ width: `${item.percentage}%` }}
+                                                                    />
+                                                                </div>
+                                                                <span className="text-[10px] text-muted-foreground">{item.percentage.toFixed(1)}%</span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4 align-middle text-right font-bold text-emerald-700">
+                                                        {item.amount.toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                    {incomeItems.length > 0 && (
+                                        <tfoot>
+                                            <tr className="bg-emerald-50/50 font-bold border-t">
+                                                <td className="p-3 px-4">Total Income</td>
+                                                <td className="p-3 px-4 text-right text-emerald-700">{totalIncome.toLocaleString()}</td>
+                                            </tr>
+                                        </tfoot>
+                                    )}
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Expense Table */}
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 px-1">
+                                <TrendingDown className="h-4 w-4 text-rose-500" />
+                                <h3 className="font-semibold text-sm">Expense Breakdown</h3>
+                            </div>
+                            <div className="rounded-xl border bg-card text-card-foreground shadow overflow-hidden">
+                                <table className="w-full caption-bottom text-sm">
+                                    <thead className="[&_tr]:border-b">
+                                        <tr className="border-b bg-primary text-white">
+                                            <th className="h-10 px-4 text-left align-middle font-semibold text-xs uppercase tracking-wider">GL Head</th>
+                                            <th className="h-10 px-4 text-right align-middle font-semibold text-xs uppercase tracking-wider">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y">
+                                        {expenseItems.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={2} className="h-24 text-center text-muted-foreground italic">No expense data found</td>
+                                            </tr>
+                                        ) : (
+                                            expenseItems.map((item) => (
+                                                <tr key={item.id} className="transition-colors hover:bg-muted/50 group">
+                                                    <td className="p-4 align-middle">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium text-sm text-foreground">{item.name}</span>
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                {item.code && (
+                                                                    <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 rounded">{item.code}</span>
+                                                                )}
+                                                                <div className="w-24 h-1 bg-muted rounded-full overflow-hidden">
+                                                                    <div
+                                                                        className="h-full bg-rose-500 rounded-full"
+                                                                        style={{ width: `${item.percentage}%` }}
+                                                                    />
+                                                                </div>
+                                                                <span className="text-[10px] text-muted-foreground">{item.percentage.toFixed(1)}%</span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4 align-middle text-right font-bold text-rose-700">
+                                                        {item.amount.toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                    {expenseItems.length > 0 && (
+                                        <tfoot>
+                                            <tr className="bg-rose-50/50 font-bold border-t">
+                                                <td className="p-3 px-4">Total Expense</td>
+                                                <td className="p-3 px-4 text-right text-rose-700">{totalExpense.toLocaleString()}</td>
+                                            </tr>
+                                        </tfoot>
+                                    )}
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

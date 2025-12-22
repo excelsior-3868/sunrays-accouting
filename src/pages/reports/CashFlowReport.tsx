@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getExpenses, getPayments } from '@/lib/api';
 import { Loader2, DollarSign, ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { toNepali } from '@/lib/nepaliDate';
+import { cn } from '@/lib/utils';
 
 export default function CashFlowReport() {
     const [loading, setLoading] = useState(true);
@@ -35,12 +36,6 @@ export default function CashFlowReport() {
             const totalInc = income.reduce((sum, item) => sum + item.amount, 0);
 
             // 2. Outflows (Expenses + Payroll)
-            // Note: Our Payroll posting logic creates entries in 'Expenses' table automatically!
-            // (See api.ts: approvePayrollRun -> createExpense)
-            // So fetching getExpenses() is sufficient to capture BOTH general expenses AND payroll.
-            // We just need to ensure we don't double count if we were to fetch payslips separately.
-            // Confirmed in api.ts lines 523-530.
-
             const expense = expensesData.map(e => ({
                 id: e.id,
                 date: e.expense_date,
@@ -69,15 +64,20 @@ export default function CashFlowReport() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold tracking-tight">Cash Flow Report</h1>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h1 className="text-2xl font-bold tracking-tight text-blue-600">Cash Flow Report</h1>
+                <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-muted/50 px-3 py-1 rounded-full border">
+                    <DollarSign className="h-3 w-3" /> Real-time Analytics
+                </div>
+            </div>
 
             {/* Summary Cards */}
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
                 <StatCard
                     title="Total Inflow"
                     value={totalInflow}
                     icon={<ArrowDownRight className="h-6 w-6" />}
-                    gradient="from-[#10B981] to-[#059669]"
+                    gradient="from-emerald-500 to-emerald-700"
                     iconBg="bg-white/20"
                     description="From Fee Collections"
                 />
@@ -85,7 +85,7 @@ export default function CashFlowReport() {
                     title="Total Outflow"
                     value={totalOutflow}
                     icon={<ArrowUpRight className="h-6 w-6" />}
-                    gradient="from-[#FF5757] to-[#E63946]"
+                    gradient="from-rose-500 to-rose-700"
                     iconBg="bg-white/20"
                     description="Expenses & Payroll"
                 />
@@ -93,49 +93,92 @@ export default function CashFlowReport() {
                     title="Net Cash Flow"
                     value={netCashFlow}
                     icon={<DollarSign className="h-6 w-6" />}
-                    gradient={netCashFlow >= 0 ? "from-[#5B7FED] to-[#4A6BD9]" : "from-[#FF5757] to-[#E63946]"}
+                    gradient={netCashFlow >= 0 ? "from-blue-500 to-blue-700" : "from-rose-600 to-rose-800"}
                     iconBg="bg-white/20"
                     description="Inflow - Outflow"
                 />
             </div>
 
             {/* Recent Transactions Table (Mixed) */}
-            <div className="rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
-                <div className="p-4 border-b">
-                    <h3 className="font-semibold">Transaction History</h3>
+            <div className="space-y-4">
+                <div className="flex items-center gap-2 px-1">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Transaction History</h3>
                 </div>
-                <div className="max-h-[500px] overflow-auto">
+
+                {/* Mobile Card View */}
+                <div className="grid grid-cols-1 gap-4 md:hidden">
+                    {[...inflows, ...outflows]
+                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                        .map((item) => (
+                            <div key={item.id} className="bg-card rounded-lg border shadow-sm p-4 space-y-3">
+                                <div className="flex justify-between items-start">
+                                    <div className="space-y-0.5">
+                                        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{toNepali(item.date)}</div>
+                                        <div className="text-[9px] text-muted-foreground">{item.date}</div>
+                                    </div>
+                                    <span className={cn(
+                                        "inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase ring-1 ring-inset",
+                                        item.type === 'Income'
+                                            ? "bg-green-50 text-green-700 ring-green-700/10"
+                                            : "bg-red-50 text-red-700 ring-red-700/10"
+                                    )}>
+                                        {item.type}
+                                    </span>
+                                </div>
+                                <div className="text-sm font-medium text-foreground">{item.description}</div>
+                                <div className={cn(
+                                    "text-right font-black text-lg pt-1",
+                                    item.type === 'Income' ? 'text-green-600' : 'text-red-600'
+                                )}>
+                                    {item.type === 'Expense' ? '-' : '+'}{formatCurrency(item.amount)}
+                                </div>
+                            </div>
+                        ))}
+                    {[...inflows, ...outflows].length === 0 && (
+                        <div className="p-8 text-center text-muted-foreground bg-card border rounded-lg italic text-sm">No transactions recorded yet.</div>
+                    )}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block rounded-lg border bg-card overflow-hidden shadow-sm">
                     <table className="w-full caption-bottom text-sm">
-                        <thead className="[&_tr]:border-b sticky top-0 bg-secondary/90 backdrop-blur-sm">
-                            <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
-                                <th className="h-10 px-4 text-left align-middle font-medium">Date(BS)</th>
-                                <th className="h-10 px-4 text-left align-middle font-medium">Date(AD)</th>
-                                <th className="h-10 px-4 text-left align-middle font-medium">Description</th>
-                                <th className="h-10 px-4 text-left align-middle font-medium">Type</th>
-                                <th className="h-10 px-4 text-right align-middle font-medium">Amount</th>
+                        <thead className="[&_tr]:border-b sticky top-0 bg-secondary/90 backdrop-blur-sm z-10">
+                            <tr className="border-b transition-colors bg-blue-600 text-white hover:bg-blue-700 font-bold uppercase text-[11px] tracking-widest">
+                                <th className="h-12 px-4 text-left align-middle">Date(BS)</th>
+                                <th className="h-12 px-4 text-left align-middle">Date(AD)</th>
+                                <th className="h-12 px-4 text-left align-middle">Description</th>
+                                <th className="h-12 px-4 text-center align-middle">Type</th>
+                                <th className="h-12 px-4 text-right align-middle">Amount</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y">
                             {[...inflows, ...outflows]
                                 .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                                 .map((item) => (
-                                    <tr key={item.id} className="border-b transition-colors hover:bg-muted/50">
+                                    <tr key={item.id} className="transition-colors hover:bg-slate-50">
                                         <td className="p-4 align-middle font-medium whitespace-nowrap">{toNepali(item.date)}</td>
-                                        <td className="p-4 align-middle text-muted-foreground whitespace-nowrap">{item.date}</td>
-                                        <td className="p-4 align-middle">{item.description}</td>
-                                        <td className="p-4 align-middle">
-                                            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors border-transparent ${item.type === 'Income' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                                }`}>
+                                        <td className="p-4 align-middle text-muted-foreground text-xs whitespace-nowrap">{item.date}</td>
+                                        <td className="p-4 align-middle font-medium">{item.description}</td>
+                                        <td className="p-4 align-middle text-center">
+                                            <span className={cn(
+                                                "inline-flex items-center rounded-md px-2.5 py-1 text-[10px] font-bold uppercase ring-1 ring-inset",
+                                                item.type === 'Income'
+                                                    ? "bg-green-50 text-green-700 ring-green-700/10"
+                                                    : "bg-red-50 text-red-700 ring-red-700/10"
+                                            )}>
                                                 {item.type}
                                             </span>
                                         </td>
-                                        <td className={`p-4 align-middle text-right font-medium ${item.type === 'Income' ? 'text-green-600' : 'text-red-600'}`}>
+                                        <td className={cn(
+                                            "p-4 align-middle text-right font-black text-lg",
+                                            item.type === 'Income' ? 'text-green-600' : 'text-red-600'
+                                        )}>
                                             {item.type === 'Expense' ? '-' : '+'}{formatCurrency(item.amount)}
                                         </td>
                                     </tr>
                                 ))}
                             {[...inflows, ...outflows].length === 0 && (
-                                <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">No transactions recorded.</td></tr>
+                                <tr><td colSpan={5} className="p-12 text-center text-muted-foreground font-medium bg-slate-50/50 text-sm">No transactions recorded.</td></tr>
                             )}
                         </tbody>
                     </table>
@@ -161,10 +204,13 @@ function StatCard({
     description?: string;
 }) {
     return (
-        <div className={`relative overflow-hidden rounded-xl shadow-lg bg-gradient-to-br ${gradient} text-white transition-all duration-300 hover:shadow-xl hover:scale-105`}>
+        <div className={cn(
+            "relative overflow-hidden rounded-xl shadow-lg bg-gradient-to-br text-white transition-all duration-300 hover:shadow-xl hover:scale-105",
+            gradient
+        )}>
             <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                    <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${iconBg}`}>
+                    <div className={cn("flex h-12 w-12 items-center justify-center rounded-lg", iconBg)}>
                         {icon}
                     </div>
                 </div>

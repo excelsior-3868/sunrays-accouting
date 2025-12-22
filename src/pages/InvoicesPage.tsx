@@ -332,10 +332,10 @@ export default function InvoicesPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold tracking-tight">Invoices</h1>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h1 className="text-2xl font-bold tracking-tight text-blue-600">Invoices</h1>
                 {can('invoices.create') && (
-                    <Button onClick={() => setIsDialogOpen(true)} className="h-9 px-4 py-2">
+                    <Button onClick={() => setIsDialogOpen(true)} className="w-full sm:w-auto font-bold bg-green-600 hover:bg-green-700 text-white">
                         <Plus className="mr-2 h-4 w-4" /> Create Invoice
                     </Button>
                 )}
@@ -343,84 +343,115 @@ export default function InvoicesPage() {
 
             {/* Filter Bar */}
             <div className="bg-card p-4 rounded-lg border shadow-sm">
-                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                    <div className="flex items-center gap-2 shrink-0">
-                        <Filter className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-semibold">Filters</span>
+                <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 shrink-0">
+                            <Filter className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-semibold">Filters</span>
+                        </div>
+                        {/* Optional: Clear Filters Button for mobile visibility */}
+                        {(classFilter || monthFilter || statusFilter || listSearch) && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
+                                onClick={() => {
+                                    setClassFilter('');
+                                    setMonthFilter('');
+                                    setStatusFilter('');
+                                    setListSearch('');
+                                }}
+                            >
+                                Clear
+                            </Button>
+                        )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                         {/* Class Filter */}
-                        <select
-                            value={classFilter}
-                            onChange={(e) => setClassFilter(e.target.value)}
-                            className="h-10 sm:h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:ring-1 focus:ring-ring w-full"
-                        >
-                            <option value="">All Classes</option>
-                            {['PG', 'Nursery', 'LKG', 'UKG'].map(c => (
-                                <option key={c} value={c}>Class {c}</option>
-                            ))}
-                        </select>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-medium text-muted-foreground uppercase ml-1">Class</label>
+                            <select
+                                value={classFilter}
+                                onChange={(e) => setClassFilter(e.target.value)}
+                                className="h-10 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:ring-1 focus:ring-ring w-full"
+                            >
+                                <option value="">All Classes</option>
+                                {['PG', 'Nursery', 'LKG', 'UKG'].map(c => (
+                                    <option key={c} value={c}>Class {c}</option>
+                                ))}
+                            </select>
+                        </div>
 
                         {/* Month Filter */}
-                        <select
-                            value={monthFilter}
-                            onChange={(e) => setMonthFilter(e.target.value)}
-                            className="h-10 sm:h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:ring-1 focus:ring-ring w-full"
-                        >
-                            <option value="">All Months</option>
-                            {['Baisakh', 'Jestha', 'Asar', 'Shrawan', 'Bhadra', 'Ashwin', 'Kartik', 'Mangsir', 'Poush', 'Magh', 'Falgun', 'Chaitra'].map(m => (
-                                <option key={m} value={m}>{m}</option>
-                            ))}
-                        </select>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-medium text-muted-foreground uppercase ml-1">Month</label>
+                            <select
+                                value={monthFilter}
+                                onChange={(e) => setMonthFilter(e.target.value)}
+                                className="h-10 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:ring-1 focus:ring-ring w-full"
+                            >
+                                <option value="">All Months</option>
+                                {['Baisakh', 'Jestha', 'Asar', 'Shrawan', 'Bhadra', 'Ashwin', 'Kartik', 'Mangsir', 'Poush', 'Magh', 'Falgun', 'Chaitra'].map(m => (
+                                    <option key={m} value={m}>{m}</option>
+                                ))}
+                            </select>
+                        </div>
 
                         {/* Status Filter */}
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="h-10 sm:h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:ring-1 focus:ring-ring w-full"
-                        >
-                            <option value="">All Status</option>
-                            <option value="Paid">Paid</option>
-                            <option value="Unpaid">Unpaid</option>
-                            <option value="Partial">Partial</option>
-                            <option value="Void">Void</option>
-                        </select>
-                    </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-medium text-muted-foreground uppercase ml-1">Status</label>
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                className="h-10 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:ring-1 focus:ring-ring w-full"
+                            >
+                                <option value="">All Status</option>
+                                <option value="Paid">Paid</option>
+                                <option value="Unpaid">Unpaid</option>
+                                <option value="Partial">Partial</option>
+                                <option value="Void">Void</option>
+                            </select>
+                        </div>
 
-                    <div className="relative w-full lg:max-w-sm shrink-0">
-                        <Search className="absolute left-3 top-3 lg:top-2.5 h-4 w-4 text-muted-foreground" />
-                        <input
-                            type="search"
-                            placeholder="Search Student..."
-                            value={listSearch}
-                            onChange={(e) => {
-                                setListSearch(e.target.value);
-                                setIsListSearchOpen(true);
-                            }}
-                            onFocus={() => setIsListSearchOpen(true)}
-                            onBlur={() => setTimeout(() => setIsListSearchOpen(false), 200)}
-                            onKeyDown={handleListKeyDown}
-                            className="flex h-10 lg:h-9 w-full rounded-md border border-input bg-background pl-10 px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus:ring-1 focus:ring-ring"
-                        />
-                        {isListSearchOpen && listFilteredStudents.length > 0 && (
-                            <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground rounded-md border shadow-lg animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
-                                {listFilteredStudents.map((student, index) => (
-                                    <div
-                                        key={student.id}
-                                        className={`px-3 py-2 hover:bg-accent cursor-pointer text-sm border-b last:border-0 ${index === listSelectedIndex ? 'bg-accent' : ''}`}
-                                        onMouseDown={(e) => {
-                                            e.preventDefault();
-                                            setListSearch(student.name);
-                                            setIsListSearchOpen(false);
-                                        }}
-                                    >
-                                        <div className="font-medium text-blue-600">{student.name}</div>
-                                        <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Class: {student.class}</div>
+                        {/* Search Student */}
+                        <div className="space-y-1 relative">
+                            <label className="text-[10px] font-medium text-muted-foreground uppercase ml-1">Student / Invoice #</label>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                <input
+                                    type="search"
+                                    placeholder="Search..."
+                                    value={listSearch}
+                                    onChange={(e) => {
+                                        setListSearch(e.target.value);
+                                        setIsListSearchOpen(true);
+                                    }}
+                                    onFocus={() => setIsListSearchOpen(true)}
+                                    onBlur={() => setTimeout(() => setIsListSearchOpen(false), 200)}
+                                    onKeyDown={handleListKeyDown}
+                                    className="flex h-10 w-full rounded-md border border-input bg-background pl-10 px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus:ring-1 focus:ring-ring"
+                                />
+                                {isListSearchOpen && listFilteredStudents.length > 0 && (
+                                    <div className="absolute gap-0 z-50 w-full mt-1 bg-popover text-popover-foreground rounded-md border shadow-lg animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
+                                        {listFilteredStudents.map((student, index) => (
+                                            <div
+                                                key={student.id}
+                                                className={`px-3 py-2 hover:bg-accent cursor-pointer text-sm border-b last:border-0 ${index === listSelectedIndex ? 'bg-accent' : ''}`}
+                                                onMouseDown={(e) => {
+                                                    e.preventDefault();
+                                                    setListSearch(student.name);
+                                                    setIsListSearchOpen(false);
+                                                }}
+                                            >
+                                                <div className="font-medium text-blue-600">{student.name}</div>
+                                                <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Class: {student.class}</div>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
+                                )}
                             </div>
-                        )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -428,68 +459,114 @@ export default function InvoicesPage() {
             {loading ? (
                 <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : (
-                <div className="rounded-lg border bg-card overflow-x-auto">
-                    <table className="w-full caption-bottom text-sm">
-                        <thead className="[&_tr]:border-b">
-                            <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
-                                <th className="h-12 px-4 text-left align-middle font-medium">Invoice #</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Student</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Class</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Month</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Date(BS)</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Date(AD)</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Amount</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {paginatedInvoices.map((inv) => (
-                                <tr
-                                    key={inv.id}
-                                    className="border-b transition-colors hover:bg-muted/50 cursor-pointer"
-                                    onClick={() => navigate(`/invoices/${inv.id}`)}
-                                >
-                                    <td className="p-4 align-middle font-medium">{inv.invoice_number}</td>
-                                    <td className="p-4 align-middle">
-                                        <div className="flex flex-col">
-                                            <span>{inv.student_name}</span>
-                                            <span className="text-xs text-muted-foreground">{inv.student_id}</span>
-                                        </div>
-                                    </td>
-                                    <td className="p-4 align-middle">
-                                        <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
-                                            {(allStudents || []).find(s => s.id === inv.student_id)?.class || '-'}
-                                        </span>
-                                    </td>
-                                    <td className="p-4 align-middle">{inv.month || '-'}</td>
-                                    <td className="p-4 align-middle font-medium whitespace-nowrap">{toNepali(inv.created_at?.split('T')[0])}</td>
-                                    <td className="p-4 align-middle text-muted-foreground whitespace-nowrap">{inv.created_at?.split('T')[0]}</td>
-                                    <td className="p-4 align-middle">NPR {inv.total_amount}</td>
-                                    <td className="p-4 align-middle">
-                                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent ${inv.status === 'Paid' ? 'bg-green-500/15 text-green-700' :
-                                            inv.status === 'Partial' ? 'bg-yellow-500/15 text-yellow-700' :
-                                                'bg-red-500/15 text-red-700'
-                                            }`}>
-                                            {inv.status}
-                                        </span>
-                                    </td>
+                <div className="space-y-4">
+                    {/* Mobile Card View */}
+                    <div className="grid grid-cols-1 gap-4 md:hidden">
+                        {paginatedInvoices.map((inv) => (
+                            <div
+                                key={inv.id}
+                                className="bg-card rounded-lg border shadow-sm p-4 space-y-3 cursor-pointer hover:border-blue-500 transition-colors"
+                                onClick={() => navigate(`/invoices/${inv.id}`)}
+                            >
+                                <div className="flex justify-between items-start">
+                                    <div className="space-y-1">
+                                        <div className="text-xs font-semibold text-blue-600 uppercase tracking-wider">{inv.invoice_number}</div>
+                                        <div className="font-bold text-lg">{inv.student_name}</div>
+                                    </div>
+                                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${inv.status === 'Paid' ? 'bg-green-500/15 text-green-700' :
+                                        inv.status === 'Partial' ? 'bg-yellow-500/15 text-yellow-700' :
+                                            'bg-red-500/15 text-red-700'
+                                        }`}>
+                                        {inv.status}
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-y-2 text-sm">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] text-muted-foreground font-medium uppercase">Class</span>
+                                        <span className="font-medium">{(allStudents || []).find(s => s.id === inv.student_id)?.class || '-'}</span>
+                                    </div>
+                                    <div className="flex flex-col text-right">
+                                        <span className="text-[10px] text-muted-foreground font-medium uppercase">Month</span>
+                                        <span className="font-medium">{inv.month || '-'}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] text-muted-foreground font-medium uppercase">Date (BS)</span>
+                                        <span className="font-medium">{toNepali(inv.created_at?.split('T')[0])}</span>
+                                    </div>
+                                    <div className="flex flex-col text-right">
+                                        <span className="text-[10px] text-muted-foreground font-medium uppercase">Amount</span>
+                                        <span className="font-bold text-blue-600">NPR {inv.total_amount}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block rounded-lg border bg-card overflow-x-auto">
+                        <table className="w-full caption-bottom text-sm">
+                            <thead className="[&_tr]:border-b">
+                                <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
+                                    <th className="h-12 px-4 text-left align-middle font-medium">Invoice #</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium">Student</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium">Class</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium">Month</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium">Date(BS)</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium">Date(AD)</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium">Amount</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium">Status</th>
                                 </tr>
-                            ))}
-                            {paginatedInvoices.length === 0 && (
-                                <tr><td colSpan={8} className="p-4 text-center text-muted-foreground">No invoices found.</td></tr>
-                            )}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {paginatedInvoices.map((inv) => (
+                                    <tr
+                                        key={inv.id}
+                                        className="border-b transition-colors hover:bg-muted/50 cursor-pointer"
+                                        onClick={() => navigate(`/invoices/${inv.id}`)}
+                                    >
+                                        <td className="p-4 align-middle font-medium">{inv.invoice_number}</td>
+                                        <td className="p-4 align-middle">
+                                            <div className="flex flex-col">
+                                                <span>{inv.student_name}</span>
+                                                <span className="text-xs text-muted-foreground">{inv.student_id}</span>
+                                            </div>
+                                        </td>
+                                        <td className="p-4 align-middle">
+                                            <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                                                {(allStudents || []).find(s => s.id === inv.student_id)?.class || '-'}
+                                            </span>
+                                        </td>
+                                        <td className="p-4 align-middle">{inv.month || '-'}</td>
+                                        <td className="p-4 align-middle font-medium whitespace-nowrap">{toNepali(inv.created_at?.split('T')[0])}</td>
+                                        <td className="p-4 align-middle text-muted-foreground whitespace-nowrap">{inv.created_at?.split('T')[0]}</td>
+                                        <td className="p-4 align-middle">NPR {inv.total_amount}</td>
+                                        <td className="p-4 align-middle">
+                                            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent ${inv.status === 'Paid' ? 'bg-green-500/15 text-green-700' :
+                                                inv.status === 'Partial' ? 'bg-yellow-500/15 text-yellow-700' :
+                                                    'bg-red-500/15 text-red-700'
+                                                }`}>
+                                                {inv.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    {paginatedInvoices.length === 0 && (
+                        <div className="p-8 text-center text-muted-foreground bg-card border rounded-lg">No invoices found.</div>
+                    )}
                 </div>
             )}
 
             {/* Pagination Controls */}
             {!loading && totalPages > 1 && (
-                <div className="flex items-center justify-between px-4 py-3 bg-card border rounded-lg">
-                    <div className="text-sm text-muted-foreground">
-                        Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 bg-card border rounded-lg">
+                    <div className="text-sm text-muted-foreground order-2 sm:order-1">
+                        Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 order-1 sm:order-2">
                         <Button
                             variant="outline"
                             size="icon"
@@ -503,7 +580,11 @@ export default function InvoicesPage() {
                         <div className="flex items-center gap-1">
                             {Array.from({ length: totalPages }, (_, i) => i + 1)
                                 .filter(page => {
-                                    // Show first, last, current, and adjacent pages
+                                    // More aggressive filtering for mobile
+                                    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+                                    if (isMobile) {
+                                        return page === 1 || page === totalPages || page === currentPage;
+                                    }
                                     return page === 1 ||
                                         page === totalPages ||
                                         Math.abs(page - currentPage) <= 1;
@@ -511,7 +592,7 @@ export default function InvoicesPage() {
                                 .map((page, index, array) => (
                                     <div key={page} className="flex items-center">
                                         {index > 0 && array[index - 1] !== page - 1 && (
-                                            <span className="px-2 text-muted-foreground">...</span>
+                                            <span className="px-1 text-muted-foreground text-xs">...</span>
                                         )}
                                         <Button
                                             variant={currentPage === page ? "default" : "outline"}
@@ -672,7 +753,7 @@ export default function InvoicesPage() {
                                     )}
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium">Month (Nepali)</label>
                                         <select

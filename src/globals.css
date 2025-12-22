@@ -14,7 +14,7 @@
     --popover-foreground: 0 0% 3.9%;
 
     /* Brand Green (from user request) */
-    --primary: 0 0% 9%;
+    --primary: 142 71% 45%;
     --primary-foreground: 0 0% 98%;
 
     --secondary: 0 0% 96.1%;
@@ -58,8 +58,8 @@
     --popover-foreground: 0 0% 98%;
 
     /* Brand Green */
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
+    --primary: 142 71% 85%;
+    --primary-foreground: 142 71% 10%;
 
     --secondary: 0 0% 14.9%;
     --secondary-foreground: 0 0% 98%;

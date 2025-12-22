@@ -151,24 +151,22 @@ export default function ExpensesPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold tracking-tight">Expenses</h1>
-                {can('expenses.manage') && (
-                    <Button onClick={() => setIsDialogOpen(true)}>
-                        <Plus className="mr-2 h-4 w-4" /> Add Expense
-                    </Button>
-                )}
-            </div>
+            <div className="flex flex-col gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <h1 className="text-2xl font-bold tracking-tight text-blue-600">Expenses</h1>
+                    {can('expenses.manage') && (
+                        <Button onClick={() => setIsDialogOpen(true)} className="w-full sm:w-auto font-bold bg-green-600 hover:bg-green-700 text-white">
+                            <Plus className="mr-2 h-4 w-4" /> Add Expense
+                        </Button>
+                    )}
+                </div>
 
-            {/* Filter Bar */}
-            <div className="bg-card p-4 rounded-lg border shadow-sm space-y-4">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
-                        <div className="flex items-center gap-2 shrink-0">
-                            <Filter className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm font-semibold">Filter by Head</span>
-                        </div>
-                        <div className="w-full sm:max-w-[400px]">
+                <div className="bg-card p-4 rounded-lg border shadow-sm space-y-4">
+                    <div className="flex flex-col md:flex-row md:items-end gap-4">
+                        <div className="flex-1 space-y-1.5">
+                            <label className="text-[10px] font-medium text-muted-foreground uppercase ml-1 flex items-center gap-1">
+                                <Filter className="h-3 w-3" /> Filter by Head
+                            </label>
                             <SearchableSelect
                                 options={[
                                     { value: '', label: 'All Expense Heads', group: 'Filter' },
@@ -180,70 +178,113 @@ export default function ExpensesPage() {
                                 className="w-full"
                             />
                         </div>
-                    </div>
 
-                    {/* Total Amount Display */}
-                    <div className="flex items-center justify-between sm:justify-end gap-3 bg-red-50 border border-red-100 px-4 py-2.5 rounded-lg shadow-sm">
-                        <span className="text-xs sm:text-sm font-bold text-red-700 uppercase tracking-wider">
-                            {selectedHeadFilter
-                                ? `${expenseOptions.find(opt => opt.value === selectedHeadFilter)?.label || 'Selected'} Total`
-                                : 'Grand Total Expenses'}
-                        </span>
-                        <span className="text-lg sm:text-xl font-black text-red-600 tabular-nums">
-                            NPR {filteredExpenses
-                                .reduce((sum, expense) => sum + expense.amount, 0)
-                                .toLocaleString()}
-                        </span>
+                        {/* Grand Total Display */}
+                        <div className="flex items-center justify-between md:justify-end gap-3 bg-red-600 p-3 rounded-lg md:min-w-[240px]">
+                            <span className="text-xs font-bold text-white uppercase tracking-wider opacity-90">
+                                {selectedHeadFilter
+                                    ? `${expenseOptions.find(opt => opt.value === selectedHeadFilter)?.label || 'Selected'} Total`
+                                    : 'Total Expenses'}
+                            </span>
+                            <span className="text-lg font-black text-white whitespace-nowrap">
+                                NPR {filteredExpenses
+                                    .reduce((sum, expense) => sum + expense.amount, 0)
+                                    .toLocaleString()}
+                            </span>
+                        </div>
+
+                        {/* Main action moved to top-level header for consistency */}
                     </div>
                 </div>
+
             </div>
 
             {loading ? (
                 <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : (
-                <div className="rounded-lg border bg-card overflow-x-auto">
-                    <table className="w-full caption-bottom text-sm">
-                        <thead className="[&_tr]:border-b">
-                            <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
-                                <th className="h-12 px-4 text-left align-middle font-medium">Date (BS)</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Date (AD)</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Expense Head</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Remarks</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Payment Mode</th>
-                                <th className="h-12 px-4 text-right align-middle font-medium">Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {paginatedExpenses.map((exp) => (
-                                <tr key={exp.id} className="border-b transition-colors hover:bg-muted/50">
-                                    <td className="p-4 align-middle">{toNepali(exp.expense_date)}</td>
-                                    <td className="p-4 align-middle text-muted-foreground">{new Date(exp.expense_date).toLocaleDateString('en-GB')}</td>
-                                    <td className="p-4 align-middle font-medium">{exp.expense_head?.name}</td>
-                                    <td className="p-4 align-middle">{exp.description}</td>
-                                    <td className="p-4 align-middle">{exp.payment_method || exp.payment_mode?.name}</td>
-                                    <td className="p-4 align-middle text-right font-semibold">NPR {exp.amount.toLocaleString()}</td>
+                <div className="space-y-4">
+                    {/* Mobile Card View */}
+                    <div className="grid grid-cols-1 gap-4 md:hidden">
+                        {paginatedExpenses.map((exp) => (
+                            <div key={exp.id} className="bg-card rounded-lg border shadow-sm p-4 space-y-3">
+                                <div className="flex justify-between items-start">
+                                    <div className="space-y-1">
+                                        <div className="text-lg font-bold text-red-600">NPR {exp.amount.toLocaleString()}</div>
+                                        <div className="font-medium text-sm">{exp.expense_head?.name}</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-xs font-bold text-muted-foreground">{toNepali(exp.expense_date)}</div>
+                                        <div className="text-[10px] text-muted-foreground">{new Date(exp.expense_date).toLocaleDateString('en-GB')}</div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2 pt-2 border-t mt-2">
+                                    <div className="space-y-0.5">
+                                        <span className="text-[10px] text-muted-foreground uppercase font-bold">Paid Via</span>
+                                        <div className="text-xs font-medium">{exp.payment_method || exp.payment_mode?.name || '-'}</div>
+                                    </div>
+                                    <div className="space-y-0.5 text-right">
+                                        <span className="text-[10px] text-muted-foreground uppercase font-bold text-right block">Fiscal Year</span>
+                                        <div className="text-xs font-medium">{fiscalYears.find(fy => fy.is_active)?.name || '-'}</div>
+                                    </div>
+                                </div>
+
+                                {exp.description && (
+                                    <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded italic">
+                                        {exp.description}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block rounded-lg border bg-card overflow-x-auto">
+                        <table className="w-full caption-bottom text-sm">
+                            <thead className="[&_tr]:border-b">
+                                <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
+                                    <th className="h-12 px-4 text-left align-middle font-medium">Date (BS)</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium">Date (AD)</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium">Expense Head</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium">Remarks</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium">Payment Mode</th>
+                                    <th className="h-12 px-4 text-right align-middle font-medium">Amount</th>
                                 </tr>
-                            ))}
-                            {paginatedExpenses.length === 0 && (
-                                <tr><td colSpan={6} className="p-4 text-center text-muted-foreground">No expenses found.</td></tr>
-                            )}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {paginatedExpenses.map((exp) => (
+                                    <tr key={exp.id} className="border-b transition-colors hover:bg-muted/50">
+                                        <td className="p-4 align-middle">{toNepali(exp.expense_date)}</td>
+                                        <td className="p-4 align-middle text-muted-foreground">{new Date(exp.expense_date).toLocaleDateString('en-GB')}</td>
+                                        <td className="p-4 align-middle font-medium">{exp.expense_head?.name}</td>
+                                        <td className="p-4 align-middle">{exp.description}</td>
+                                        <td className="p-4 align-middle">{exp.payment_method || exp.payment_mode?.name}</td>
+                                        <td className="p-4 align-middle text-right font-semibold">NPR {exp.amount.toLocaleString()}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {paginatedExpenses.length === 0 && (
+                        <div className="p-8 text-center text-muted-foreground border rounded-lg bg-card">No expenses found.</div>
+                    )}
                 </div>
             )}
 
             {/* Pagination Controls */}
             {!loading && totalPages > 1 && (
-                <div className="flex items-center justify-between px-4 py-3 bg-card border rounded-lg">
-                    <div className="text-sm text-muted-foreground">
-                        Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 bg-card border rounded-lg">
+                    <div className="text-sm text-muted-foreground order-2 sm:order-1">
+                        Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 order-1 sm:order-2">
                         <Button
                             variant="outline"
                             size="icon"
                             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                             disabled={currentPage === 1}
+                            className="h-8 w-8"
                         >
                             <ChevronLeft className="h-4 w-4" />
                         </Button>
@@ -251,7 +292,10 @@ export default function ExpensesPage() {
                         <div className="flex items-center gap-1">
                             {Array.from({ length: totalPages }, (_, i) => i + 1)
                                 .filter(page => {
-                                    // Show first, last, current, and adjacent pages
+                                    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+                                    if (isMobile) {
+                                        return page === 1 || page === totalPages || page === currentPage;
+                                    }
                                     return page === 1 ||
                                         page === totalPages ||
                                         Math.abs(page - currentPage) <= 1;
@@ -259,12 +303,13 @@ export default function ExpensesPage() {
                                 .map((page, index, array) => (
                                     <div key={page} className="flex items-center">
                                         {index > 0 && array[index - 1] !== page - 1 && (
-                                            <span className="px-2 text-muted-foreground">...</span>
+                                            <span className="px-1 text-muted-foreground text-xs">...</span>
                                         )}
                                         <Button
                                             variant={currentPage === page ? "default" : "outline"}
                                             size="icon"
                                             onClick={() => setCurrentPage(page)}
+                                            className="h-8 w-8 text-xs"
                                         >
                                             {page}
                                         </Button>
@@ -277,6 +322,7 @@ export default function ExpensesPage() {
                             size="icon"
                             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                             disabled={currentPage === totalPages}
+                            className="h-8 w-8"
                         >
                             <ChevronRight className="h-4 w-4" />
                         </Button>
@@ -285,46 +331,45 @@ export default function ExpensesPage() {
             )}
 
             {isDialogOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                    <div className="bg-background rounded-lg shadow-lg w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
-                        <h3 className="text-lg font-semibold mb-4">Record Expense</h3>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-background rounded-lg shadow-lg w-full max-w-md p-6 animate-in fade-in zoom-in duration-200 overflow-y-auto max-h-[90vh]">
+                        <h3 className="text-lg font-bold text-blue-600 uppercase tracking-widest mb-4">Record Expense</h3>
                         <form onSubmit={handleCreate} className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Fiscal Year</label>
+                                <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Fiscal Year</label>
                                 <input
                                     type="text"
                                     disabled
-                                    className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm opacity-100" // opacity-100 to ensure readability
+                                    className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm opacity-100 shadow-sm"
                                     value={fiscalYears.find(fy => fy.is_active)?.name || 'No Active FY'}
                                 />
-                                <input type="hidden" name="fiscal_year_id" value={fiscalYears.find(fy => fy.is_active)?.id || ''} />
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Expense Head</label>
+                                <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Expense Head *</label>
                                 <SearchableSelect
                                     options={expenseOptions}
                                     value={newExpenseState.expense_head_id}
                                     onChange={(val) => setNewExpenseState({ ...newExpenseState, expense_head_id: val })}
                                     placeholder="Select Expense Type..."
                                 />
-                                <input type="hidden" name="expense_head_id" value={newExpenseState.expense_head_id} required />
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Amount</label>
+                                <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Amount (NPR) *</label>
                                 <input
                                     type="number"
                                     name="amount"
                                     required
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
+                                    placeholder="0.00"
                                     value={newExpenseState.amount}
                                     onChange={e => setNewExpenseState({ ...newExpenseState, amount: e.target.value })}
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Date (BS)</label>
+                                <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Date (BS)</label>
                                 <NepaliDatePicker
                                     value={newExpenseState.expense_date}
                                     onChange={(adDate) => setNewExpenseState({ ...newExpenseState, expense_date: adDate })}
@@ -333,7 +378,7 @@ export default function ExpensesPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Payment Mode (Paid From)</label>
+                                <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Payment Mode *</label>
                                 <SearchableSelect
                                     options={[
                                         { value: 'Cash', label: 'Cash', group: 'Methods' },
@@ -345,22 +390,22 @@ export default function ExpensesPage() {
                                     onChange={(val) => setNewExpenseState({ ...newExpenseState, payment_method: val })}
                                     placeholder="Select Payment Mode..."
                                 />
-                                <input type="hidden" name="payment_method" value={newExpenseState.payment_method} required />
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Description</label>
+                                <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Description</label>
                                 <textarea
                                     name="description"
-                                    className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
+                                    placeholder="Additional details..."
                                     value={newExpenseState.description}
                                     onChange={e => setNewExpenseState({ ...newExpenseState, description: e.target.value })}
                                 />
                             </div>
 
-                            <div className="flex justify-end gap-2 mt-6">
-                                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                                <Button type="submit">Save Expense</Button>
+                            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 mt-6 pt-4 border-t">
+                                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="w-full sm:w-auto">Cancel</Button>
+                                <Button type="submit" className="w-full sm:w-auto font-bold bg-blue-600 hover:bg-blue-700 text-white">Save Expense</Button>
                             </div>
                         </form>
                     </div>

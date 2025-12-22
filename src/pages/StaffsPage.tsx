@@ -193,10 +193,11 @@ export default function StaffsPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold tracking-tight">Staff Management</h1>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h1 className="text-2xl font-bold tracking-tight text-blue-600">Staff Management</h1>
                 <Button
                     onClick={handleOpenCreate}
+                    className="w-full sm:w-auto font-bold bg-green-600 hover:bg-green-700 text-white"
                 >
                     <Plus className="mr-2 h-4 w-4" /> Add {activeTab === 'teachers' ? 'Teacher' : 'Staff'}
                 </Button>
@@ -338,7 +339,7 @@ export default function StaffsPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
                     <div className="bg-background rounded-lg shadow-lg w-full max-w-lg p-6 animate-in fade-in zoom-in duration-200">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-lg font-semibold">{editingId ? 'Edit' : 'Add'} {activeTab === 'teachers' ? 'Teacher' : 'Staff Member'}</h2>
+                            <h2 className="text-lg font-bold text-blue-600 uppercase tracking-widest">{editingId ? 'Edit' : 'Add'} {activeTab === 'teachers' ? 'Teacher' : 'Staff Member'}</h2>
                             <Button variant="ghost" size="icon" onClick={() => setIsDialogOpen(false)}><X className="h-5 w-5" /></Button>
                         </div>
 
@@ -379,7 +380,7 @@ export default function StaffsPage() {
 
                             <div className="flex justify-end gap-2 pt-4">
                                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                                <Button type="submit">Save</Button>
+                                <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold">Save</Button>
                             </div>
                         </form>
                     </div>

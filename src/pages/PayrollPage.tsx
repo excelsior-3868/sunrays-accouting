@@ -224,108 +224,163 @@ export default function PayrollPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <h1 className="text-2xl font-bold tracking-tight">Payroll</h1>
-
-                <div className="grid grid-cols-1 sm:flex items-center gap-2">
-                    <select
-                        value={monthFilter}
-                        onChange={(e) => setMonthFilter(e.target.value)}
-                        className="h-10 sm:h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring w-full sm:w-auto"
-                    >
-                        <option value="">All Months</option>
-                        {['Baisakh', 'Jestha', 'Asar', 'Shrawan', 'Bhadra', 'Ashwin', 'Kartik', 'Mangsir', 'Poush', 'Magh', 'Falgun', 'Chaitra'].map(m => (
-                            <option key={m} value={m}>{m}</option>
-                        ))}
-                    </select>
-
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value as any)}
-                        className="h-10 sm:h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring w-full sm:w-auto"
-                    >
-                        <option value="All">All Status</option>
-                        <option value="Draft">Draft (Not Paid)</option>
-                        <option value="Posted">Posted (Paid)</option>
-                    </select>
-
+            <div className="flex flex-col gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <h1 className="text-2xl font-bold tracking-tight text-blue-600">Payroll</h1>
                     {can('payroll.manage') && (
-                        <Button onClick={() => setIsDialogOpen(true)} className="sm:w-auto md:w-auto">
+                        <Button onClick={() => setIsDialogOpen(true)} className="w-full sm:w-auto font-bold bg-green-600 hover:bg-green-700 text-white">
                             <Plus className="mr-2 h-4 w-4" /> Run Payroll
                         </Button>
                     )}
+                </div>
+
+                <div className="bg-card p-4 rounded-lg border shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="grid grid-cols-2 sm:flex items-center gap-2 flex-1">
+                        <div className="space-y-1 w-full flex-1">
+                            <label className="text-[10px] font-medium text-muted-foreground uppercase ml-1">Month</label>
+                            <select
+                                value={monthFilter}
+                                onChange={(e) => setMonthFilter(e.target.value)}
+                                className="h-10 sm:h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring w-full"
+                            >
+                                <option value="">All Months</option>
+                                {['Baisakh', 'Jestha', 'Asar', 'Shrawan', 'Bhadra', 'Ashwin', 'Kartik', 'Mangsir', 'Poush', 'Magh', 'Falgun', 'Chaitra'].map(m => (
+                                    <option key={m} value={m}>{m}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="space-y-1 w-full flex-1">
+                            <label className="text-[10px] font-medium text-muted-foreground uppercase ml-1">Status</label>
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value as any)}
+                                className="h-10 sm:h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring w-full"
+                            >
+                                <option value="All">All Status</option>
+                                <option value="Draft">Draft</option>
+                                <option value="Posted">Posted</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Main action moved to top-level header for consistency */}
                 </div>
             </div>
 
             {loading ? (
                 <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : (
-                <div className="rounded-lg border bg-card overflow-x-auto">
-                    <table className="w-full caption-bottom text-sm">
-                        <thead className="[&_tr]:border-b">
-                            <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
-                                <th className="h-12 px-4 text-left align-middle font-medium">Month</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Run Date(BS)</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Run Date(AD)</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Approve Status</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {paginatedRuns.map((run) => (
-                                <tr key={run.id} className="border-b transition-colors hover:bg-muted/50">
-                                    <td className="p-4 align-middle font-medium">{run.month}</td>
-                                    <td className="p-4 align-middle font-medium whitespace-nowrap">{toNepali(run.created_at?.split('T')[0])}</td>
-                                    <td className="p-4 align-middle text-muted-foreground whitespace-nowrap">{run.created_at?.split('T')[0]}</td>
-                                    <td className="p-4 align-middle">
-                                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent ${run.is_posted ? 'bg-green-500/15 text-green-700' : 'bg-yellow-500/15 text-yellow-700'
-                                            }`}>
+                <div className="space-y-4">
+                    {/* Mobile Card View */}
+                    <div className="grid grid-cols-1 gap-4 md:hidden">
+                        {paginatedRuns.map((run) => (
+                            <div
+                                key={run.id}
+                                className="bg-card rounded-lg border shadow-sm p-4 space-y-3"
+                            >
+                                <div className="flex justify-between items-start">
+                                    <div className="space-y-1">
+                                        <div className="text-lg font-bold text-blue-600">{run.month}</div>
+                                        <div className="text-xs text-muted-foreground">Run: {toNepali(run.created_at?.split('T')[0])}</div>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-2">
+                                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${run.is_posted ? 'bg-green-500/15 text-green-700' : 'bg-yellow-500/15 text-yellow-700'}`}>
                                             {run.is_posted ? 'Posted' : 'Draft'}
                                         </span>
-                                    </td>
-                                    <td className="p-4 align-middle">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1">
                                             <Button
-                                                variant="ghost"
-                                                size="icon"
+                                                variant="outline"
+                                                size="sm"
                                                 onClick={() => handleView(run.id)}
-                                                title={run.is_posted ? "View Details" : "View & Approve"}
-                                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                                className="h-8 px-2 text-xs"
                                             >
-                                                <Eye size={18} />
+                                                <Eye className="mr-1 h-3.5 w-3.5" /> Details
                                             </Button>
-
                                             {!run.is_posted && can('payroll.manage') && (
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
                                                     onClick={() => handleDelete(run.id)}
-                                                    title="Delete Run"
-                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                    className="h-8 w-8 text-red-600 hover:bg-red-50"
                                                 >
-                                                    <Trash2 size={18} />
+                                                    <Trash2 className="h-4 w-4" />
                                                 </Button>
                                             )}
                                         </div>
-                                    </td>
-                                </tr>
-                            ))}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
 
-                            {paginatedRuns.length === 0 && (
-                                <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">No payroll runs found.</td></tr>
-                            )}
-                        </tbody>
-                    </table>
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block rounded-lg border bg-card overflow-x-auto">
+                        <table className="w-full caption-bottom text-sm">
+                            <thead className="[&_tr]:border-b">
+                                <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
+                                    <th className="h-12 px-4 text-left align-middle font-medium">Month</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium">Run Date(BS)</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium">Run Date(AD)</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium">Approve Status</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {paginatedRuns.map((run) => (
+                                    <tr key={run.id} className="border-b transition-colors hover:bg-muted/50">
+                                        <td className="p-4 align-middle font-medium">{run.month}</td>
+                                        <td className="p-4 align-middle font-medium whitespace-nowrap">{toNepali(run.created_at?.split('T')[0])}</td>
+                                        <td className="p-4 align-middle text-muted-foreground whitespace-nowrap">{run.created_at?.split('T')[0]}</td>
+                                        <td className="p-4 align-middle">
+                                            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent ${run.is_posted ? 'bg-green-500/15 text-green-700' : 'bg-yellow-500/15 text-yellow-700'
+                                                }`}>
+                                                {run.is_posted ? 'Posted' : 'Draft'}
+                                            </span>
+                                        </td>
+                                        <td className="p-4 align-middle">
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleView(run.id)}
+                                                    title={run.is_posted ? "View Details" : "View & Approve"}
+                                                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                                >
+                                                    <Eye size={18} />
+                                                </Button>
+
+                                                {!run.is_posted && can('payroll.manage') && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => handleDelete(run.id)}
+                                                        title="Delete Run"
+                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    {paginatedRuns.length === 0 && (
+                        <div className="p-8 text-center text-muted-foreground border rounded-lg bg-card">No payroll runs found.</div>
+                    )}
                 </div>
             )}
 
             {/* Pagination Controls */}
             {!loading && totalPages > 1 && (
-                <div className="flex items-center justify-between px-4 py-3 bg-card border rounded-lg">
-                    <div className="text-sm text-muted-foreground">
-                        Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 bg-card border rounded-lg">
+                    <div className="text-sm text-muted-foreground order-2 sm:order-1">
+                        Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 order-1 sm:order-2">
                         <Button
                             variant="outline"
                             size="icon"
@@ -339,7 +394,11 @@ export default function PayrollPage() {
                         <div className="flex items-center gap-1">
                             {Array.from({ length: totalPages }, (_, i) => i + 1)
                                 .filter(page => {
-                                    // Show first, last, current, and adjacent pages
+                                    // More aggressive filtering for mobile
+                                    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+                                    if (isMobile) {
+                                        return page === 1 || page === totalPages || page === currentPage;
+                                    }
                                     return page === 1 ||
                                         page === totalPages ||
                                         Math.abs(page - currentPage) <= 1;
@@ -347,7 +406,7 @@ export default function PayrollPage() {
                                 .map((page, index, array) => (
                                     <div key={page} className="flex items-center">
                                         {index > 0 && array[index - 1] !== page - 1 && (
-                                            <span className="px-2 text-muted-foreground">...</span>
+                                            <span className="px-1 text-muted-foreground text-xs">...</span>
                                         )}
                                         <Button
                                             variant={currentPage === page ? "default" : "outline"}
@@ -377,7 +436,7 @@ export default function PayrollPage() {
             {isDialogOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
                     <div className="bg-background rounded-lg shadow-lg w-full max-w-sm p-6 animate-in fade-in zoom-in duration-200">
-                        <h3 className="text-lg font-semibold mb-4">Run Payroll</h3>
+                        <h3 className="text-lg font-bold text-blue-600 uppercase tracking-widest mb-4">Run Payroll</h3>
                         <form onSubmit={handleGenerate} className="space-y-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Fiscal Year</label>
@@ -398,7 +457,7 @@ export default function PayrollPage() {
                             </div>
                             <div className="flex justify-end gap-2 mt-6">
                                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                                <Button type="submit">Generate</Button>
+                                <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold">Generate</Button>
                             </div>
                         </form>
                     </div>
@@ -410,7 +469,7 @@ export default function PayrollPage() {
                     <div className="bg-background rounded-lg shadow-lg w-full max-w-4xl p-4 sm:p-6 animate-in fade-in zoom-in duration-200 overflow-y-auto max-h-[90vh]">
                         <div className="flex justify-between items-start mb-6">
                             <div>
-                                <h3 className="text-lg sm:text-xl font-bold">Payroll Review - {viewingRun.month}</h3>
+                                <h3 className="text-lg sm:text-xl font-bold text-blue-600 uppercase tracking-widest">Payroll Review - {viewingRun.month}</h3>
                                 <div className="flex items-center gap-2 mt-1">
                                     <span className={`px-2 py-0.5 rounded text-[10px] sm:text-xs font-bold uppercase tracking-wider ${viewingRun.is_posted ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                                         {viewingRun.is_posted ? 'Posted' : 'Draft'}
@@ -423,33 +482,64 @@ export default function PayrollPage() {
                             </Button>
                         </div>
 
-                        <div className="rounded-md border overflow-x-auto">
-                            <table className="w-full text-sm min-w-[600px]">
-                                <thead className="[&_tr]:border-b">
-                                    <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
-                                        <th className="h-10 px-4 text-left font-medium">Employee</th>
-                                        <th className="h-10 px-4 text-right font-medium">Earnings</th>
-                                        <th className="h-10 px-4 text-right font-medium">Deductions</th>
-                                        <th className="h-10 px-4 text-right font-medium">Net Salary</th>
-                                        <th className="h-10 px-4 text-center font-medium">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {viewingRun.payslips?.map((slip: any) => (
-                                        <tr key={slip.id} className="border-t hover:bg-muted/30 transition-colors">
-                                            <td className="p-3 font-medium">{slip.employee_name}</td>
-                                            <td className="p-3 text-right text-green-600 tabular-nums">NPR {slip.total_earnings?.toLocaleString()}</td>
-                                            <td className="p-3 text-right text-red-500 tabular-nums">NPR {slip.total_deductions?.toLocaleString()}</td>
-                                            <td className="p-3 text-right font-bold tabular-nums text-blue-600">NPR {slip.net_salary?.toLocaleString()}</td>
-                                            <td className="p-3 text-center">
-                                                <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase transition-colors ${slip.status === 'Paid' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-yellow-50 text-yellow-600 border border-yellow-200'}`}>
-                                                    {slip.status}
-                                                </span>
-                                            </td>
+                        <div className="rounded-md border overflow-hidden">
+                            {/* Mobile Payslip View */}
+                            <div className="block sm:hidden divide-y max-h-[400px] overflow-y-auto">
+                                {viewingRun.payslips?.map((slip: any) => (
+                                    <div key={slip.id} className="p-4 space-y-2">
+                                        <div className="flex justify-between items-start">
+                                            <div className="font-bold text-blue-600">{slip.employee_name}</div>
+                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase transition-colors ${slip.status === 'Paid' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-yellow-50 text-yellow-600 border border-yellow-200'}`}>
+                                                {slip.status}
+                                            </span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 text-xs">
+                                            <div>
+                                                <span className="text-muted-foreground">Earnings:</span>
+                                                <div className="text-green-600 font-medium">NPR {slip.total_earnings?.toLocaleString()}</div>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="text-muted-foreground">Deductions:</span>
+                                                <div className="text-red-500 font-medium">NPR {slip.total_deductions?.toLocaleString()}</div>
+                                            </div>
+                                            <div className="col-span-2 pt-1 border-t flex justify-between items-center">
+                                                <span className="font-bold text-muted-foreground">Net Salary:</span>
+                                                <div className="text-sm font-bold text-blue-600">NPR {slip.net_salary?.toLocaleString()}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Desktop Payslip Table */}
+                            <div className="hidden sm:block overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead className="[&_tr]:border-b">
+                                        <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
+                                            <th className="h-10 px-4 text-left font-medium">Employee</th>
+                                            <th className="h-10 px-4 text-right font-medium">Earnings</th>
+                                            <th className="h-10 px-4 text-right font-medium">Deductions</th>
+                                            <th className="h-10 px-4 text-right font-medium">Net Salary</th>
+                                            <th className="h-10 px-4 text-center font-medium">Status</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {viewingRun.payslips?.map((slip: any) => (
+                                            <tr key={slip.id} className="border-t hover:bg-muted/30 transition-colors">
+                                                <td className="p-3 font-medium">{slip.employee_name}</td>
+                                                <td className="p-3 text-right text-green-600 tabular-nums">NPR {slip.total_earnings?.toLocaleString()}</td>
+                                                <td className="p-3 text-right text-red-500 tabular-nums" >NPR {slip.total_deductions?.toLocaleString()}</td>
+                                                <td className="p-3 text-right font-bold tabular-nums text-blue-600">NPR {slip.net_salary?.toLocaleString()}</td>
+                                                <td className="p-3 text-center">
+                                                    <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase transition-colors ${slip.status === 'Paid' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-yellow-50 text-yellow-600 border border-yellow-200'}`}>
+                                                        {slip.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
                         {!viewingRun.is_posted && (
@@ -483,7 +573,7 @@ export default function PayrollPage() {
                                         handleApprove(viewingRun.id);
                                         setViewingRun(null);
                                     }}
-                                    className="font-bold shadow-sm"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm"
                                 >
                                     Approve & Process Payments
                                 </Button>

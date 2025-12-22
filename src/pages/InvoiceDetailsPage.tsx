@@ -6,6 +6,7 @@ import { getInvoiceById, recordPayment, getFiscalYears, getGLHeads, getStudentUn
 import { type Invoice, type FiscalYear, type GLHead } from '@/types';
 import SearchableSelect from '@/components/SearchableSelect';
 import { usePermission } from '@/hooks/usePermission';
+import { Button } from '@/components/ui/button';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -133,93 +134,125 @@ export default function InvoiceDetailsPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center gap-4">
-                <button onClick={() => navigate('/invoices')} className="p-2 hover:bg-muted rounded-full">
-                    <ArrowLeft className="h-5 w-5" />
-                </button>
-                <h1 className="text-2xl font-bold tracking-tight">Invoice {invoice.invoice_number}</h1>
-                <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent ${invoice.status === 'Paid' ? 'bg-green-500/15 text-green-700' :
-                    invoice.status === 'Partial' ? 'bg-yellow-500/15 text-yellow-700' :
-                        'bg-red-500/15 text-red-700'
-                    }`}>
-                    {invoice.status}
-                </span>
-                <button onClick={() => window.print()} className="ml-auto inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2">
-                    <Printer className="mr-2 h-4 w-4" /> Print
-                </button>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <button onClick={() => navigate('/invoices')} className="p-2 hover:bg-muted rounded-full shrink-0 border sm:border-0">
+                        <ArrowLeft className="h-5 w-5" />
+                    </button>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Invoice {invoice.invoice_number}</h1>
+                        <span className={`w-fit inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent ${invoice.status === 'Paid' ? 'bg-green-500/15 text-green-700' :
+                            invoice.status === 'Partial' ? 'bg-yellow-500/15 text-yellow-700' :
+                                'bg-red-500/15 text-red-700'
+                            }`}>
+                            {invoice.status}
+                        </span>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2 sm:ml-auto">
+                    <Button variant="outline" size="sm" onClick={() => window.print()} className="flex-1 sm:flex-none">
+                        <Printer className="mr-2 h-4 w-4" /> Print
+                    </Button>
+                    {invoice.status !== 'Paid' && can('invoices.create') && (
+                        <Button size="sm" onClick={() => setIsPaymentDialogOpen(true)} className="flex-1 sm:flex-none">
+                            <CreditCard className="mr-2 h-4 w-4" /> Receive Payment
+                        </Button>
+                    )}
+                </div>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-                <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-                    <h3 className="font-semibold mb-4">Student Details</h3>
+            <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+                <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-5 sm:p-6">
+                    <h3 className="font-semibold mb-4 text-blue-600 uppercase text-[10px] tracking-widest">Student Details</h3>
                     <div className="space-y-1 text-sm">
-                        <div className="flex justify-between py-1 border-b">
+                        <div className="flex justify-between py-2 border-b">
                             <span className="text-muted-foreground">ID</span>
                             <span className="font-medium">{invoice.student_id}</span>
                         </div>
-                        <div className="flex justify-between py-1 border-b">
+                        <div className="flex justify-between py-2 border-b">
                             <span className="text-muted-foreground">Name</span>
                             <span className="font-medium">{invoice.student_name}</span>
                         </div>
-                        <div className="flex justify-between py-1 border-b">
+                        <div className="flex justify-between py-2 border-b">
                             <span className="text-muted-foreground">Due Date</span>
                             <span className="font-medium">{invoice.due_date}</span>
                         </div>
-                        <div className="flex justify-between py-1 border-b">
+                        <div className="flex justify-between py-2 border-b">
                             <span className="text-muted-foreground">Month</span>
-                            <span className="font-medium">{invoice.month || '-'}</span>
+                            <span className="font-medium text-blue-600">{invoice.month || '-'}</span>
                         </div>
                     </div>
                 </div>
 
-                <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-                    <h3 className="font-semibold mb-4 flex justify-between items-center">
-                        <div>Summary</div>
-                        {invoice.status !== 'Paid' && can('invoices.create') && (
-                            <button onClick={() => setIsPaymentDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3">
-                                <CreditCard className="mr-2 h-3.5 w-3.5" /> Record Payment
-                            </button>
-                        )}
-                    </h3>
-                    <div className="space-y-1 mb-4">
+                <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-5 sm:p-6">
+                    <h3 className="font-semibold mb-4 text-blue-600 uppercase text-[10px] tracking-widest">Payment Summary</h3>
+                    <div className="space-y-3 mb-4">
                         <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Current Amount {invoice.month ? `(${invoice.month})` : ''}</span>
-                            <span>NPR {invoice.total_amount}</span>
+                            <span className="font-medium">NPR {invoice.total_amount}</span>
                         </div>
                         {effectivePrevDues > 0 && (
                             <div className="flex justify-between text-sm text-red-600">
-                                <span>Previous Dues {effectivePrevMonths ? `(${effectivePrevMonths})` : ''}</span>
-                                <span>NPR {effectivePrevDues}</span>
+                                <span className="flex flex-col">
+                                    <span>Previous Dues</span>
+                                    {effectivePrevMonths && <span className="text-[10px] opacity-70">({effectivePrevMonths})</span>}
+                                </span>
+                                <span className="font-medium">NPR {effectivePrevDues}</span>
                             </div>
                         )}
-                        <div className="border-t my-2 pt-2 flex justify-between font-bold">
-                            <span>Total Payable</span>
-                            <span>NPR {invoice.total_amount + effectivePrevDues}</span>
+                        <div className="border-t border-dashed my-2 pt-2 flex justify-between font-bold text-lg">
+                            <span className="text-base font-semibold">Total Payable</span>
+                            <span className="text-blue-600">NPR {invoice.total_amount + effectivePrevDues}</span>
                         </div>
                     </div>
+                    {invoice.status !== 'Paid' && can('invoices.create') && (
+                        <Button onClick={() => setIsPaymentDialogOpen(true)} className="w-full sm:hidden">
+                            <CreditCard className="mr-2 h-4 w-4" /> Record Payment
+                        </Button>
+                    )}
                 </div>
             </div>
 
             <div className="rounded-lg border bg-card overflow-hidden">
-                <div className="p-4 font-semibold border-b">Lines</div>
-                <table className="w-full caption-bottom text-sm">
-                    <thead>
-                        <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
-                            <th className="h-10 px-4 text-left align-middle font-medium">GL Head</th>
-                            <th className="h-10 px-4 text-left align-middle font-medium">Description</th>
-                            <th className="h-10 px-4 text-right align-middle font-medium">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {invoice.items?.map((item) => (
-                            <tr key={item.id} className="border-b transition-colors">
-                                <td className="p-4 align-middle">{item.gl_head?.name}</td>
-                                <td className="p-4 align-middle">{item.description}</td>
-                                <td className="p-4 align-middle text-right">{item.amount}</td>
+                <div className="p-4 font-semibold border-b flex items-center justify-between">
+                    <span className="text-sm uppercase tracking-widest text-muted-foreground font-bold">Invoice Lines</span>
+                    <span className="text-xs text-muted-foreground">{invoice.items?.length || 0} items</span>
+                </div>
+
+                {/* Mobile View for Items */}
+                <div className="block sm:hidden divide-y">
+                    {invoice.items?.map((item) => (
+                        <div key={item.id} className="p-4 space-y-1">
+                            <div className="flex justify-between items-start">
+                                <div className="font-semibold text-blue-600">{item.gl_head?.name}</div>
+                                <div className="font-bold">NPR {item.amount}</div>
+                            </div>
+                            <p className="text-xs text-muted-foreground">{item.description}</p>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Desktop View for Items */}
+                <div className="hidden sm:block overflow-x-auto">
+                    <table className="w-full caption-bottom text-sm">
+                        <thead>
+                            <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
+                                <th className="h-10 px-4 text-left align-middle font-medium">GL Head</th>
+                                <th className="h-10 px-4 text-left align-middle font-medium">Description</th>
+                                <th className="h-10 px-4 text-right align-middle font-medium">Amount</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {invoice.items?.map((item) => (
+                                <tr key={item.id} className="border-b transition-colors hover:bg-muted/50">
+                                    <td className="p-4 align-middle font-medium">{item.gl_head?.name}</td>
+                                    <td className="p-4 align-middle">{item.description}</td>
+                                    <td className="p-4 align-middle text-right font-bold">NPR {item.amount}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {isPaymentDialogOpen && (

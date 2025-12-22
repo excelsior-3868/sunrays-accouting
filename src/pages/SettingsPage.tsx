@@ -119,11 +119,12 @@ export default function SettingsPage() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold tracking-tight">Fiscal Years Settings</h1>
+
 
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold">Fiscal Years</h2>
+
+                    <h1 className="text-2xl font-bold tracking-tight">Fiscal Years Settings</h1>
                     <Button
                         onClick={() => { setEditingYear(null); setIsDialogOpen(true); }}
                     >

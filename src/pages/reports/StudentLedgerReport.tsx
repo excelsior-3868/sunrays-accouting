@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
+import { cn } from '@/lib/utils';
 import { getInvoices, getPayments, getStudents, getFiscalYears } from '@/lib/api';
 import { Loader2, Search, X, ListFilter } from 'lucide-react';
 import { toNepali } from '@/lib/nepaliDate';
@@ -190,135 +191,173 @@ export default function StudentLedgerReport() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold tracking-tight">Student Ledger</h1>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h1 className="text-2xl font-bold tracking-tight text-blue-600">Student Ledger</h1>
+            </div>
 
-            <div className="flex items-center gap-4 rounded-lg border bg-card p-4 shadow-sm">
-                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                    <ListFilter className="h-4 w-4" />
-                    Filters:
-                </div>
-
-                <select
-                    value={selectedFyId}
-                    onChange={(e) => setSelectedFyId(e.target.value)}
-                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring w-[140px]"
-                >
-                    <option value="">All Time</option>
-                    {fiscalYears.map(fy => (
-                        <option key={fy.id} value={fy.id}>{fy.name}</option>
-                    ))}
-                </select>
-
-                <div className="relative flex-1 max-w-md">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <input
-                        type="text"
-                        placeholder="Search Student..."
-                        className="pl-9 pr-8 h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                        value={searchQuery}
-                        onChange={(e) => {
-                            setSearchQuery(e.target.value);
-                            if (selectedStudentId) {
-                                setSelectedStudentId(''); // Reset selection if user types
-                            }
-                        }}
-                        onFocus={() => setIsSearchFocused(true)}
-                        onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                        onKeyDown={(e) => {
-                            if (!isSearchFocused) return;
-                            const options = filteredStudentSearchList;
-
-                            if (e.key === 'ArrowDown') {
-                                e.preventDefault();
-                                setFocusedIndex(prev => (prev < options.length - 1 ? prev + 1 : prev));
-                            } else if (e.key === 'ArrowUp') {
-                                e.preventDefault();
-                                setFocusedIndex(prev => (prev > 0 ? prev - 1 : 0));
-                            } else if (e.key === 'Enter') {
-                                e.preventDefault();
-                                if (focusedIndex >= 0 && focusedIndex < options.length) {
-                                    const selected = options[focusedIndex];
-                                    setSearchQuery(selected.name);
-                                    setSelectedStudentId(selected.id);
-                                    setIsSearchFocused(false);
-                                }
-                            }
-                        }}
-                    />
-                    {searchQuery && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                                setSearchQuery('');
-                                setSelectedStudentId('');
-                            }}
-                            className="absolute inset-y-0 right-0 h-full w-9 text-muted-foreground hover:text-foreground"
+            <div className="bg-card p-4 rounded-lg border shadow-sm">
+                <div className="flex flex-col md:flex-row md:items-end gap-4">
+                    <div className="w-full md:w-48 space-y-1.5">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase ml-1 flex items-center gap-1">
+                            <ListFilter className="h-3 w-3" /> Fiscal Year
+                        </label>
+                        <select
+                            value={selectedFyId}
+                            onChange={(e) => setSelectedFyId(e.target.value)}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus:ring-1 focus:ring-ring"
                         >
-                            <X className="h-4 w-4" />
-                        </Button>
-                    )}
-
-                    {isSearchFocused && (searchQuery || filteredStudentSearchList.length > 0) && (
-                        <div className="absolute z-50 mt-1 w-full bg-popover text-popover-foreground rounded-md border shadow-md animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
-                            {filteredStudentSearchList.map((s, i) => (
-                                <div
-                                    key={s.id}
-                                    className={`px-3 py-2 cursor-pointer text-sm hover:bg-muted ${focusedIndex === i ? 'bg-muted' : ''}`}
-                                    onMouseDown={(e) => {
-                                        e.preventDefault(); // Prevent blur
-                                        setSearchQuery(s.name);
-                                        setSelectedStudentId(s.id);
-                                        setIsSearchFocused(false);
-                                    }}
-                                >
-                                    <div className="font-medium">{s.name}</div>
-                                    <div className="text-xs text-muted-foreground flex justify-between">
-                                        <span>Class: {s.class_name}</span>
-                                        <span>ID: {s.student_id}</span>
-                                    </div>
-                                </div>
+                            <option value="">All Time</option>
+                            {fiscalYears.map(fy => (
+                                <option key={fy.id} value={fy.id}>{fy.name}</option>
                             ))}
-                            {filteredStudentSearchList.length === 0 && (
-                                <div className="p-2 text-sm text-muted-foreground text-center">No results</div>
+                        </select>
+                    </div>
+
+                    <div className="flex-1 space-y-1.5">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase ml-1 flex items-center gap-1">
+                            <Search className="h-3 w-3" /> Student Search
+                        </label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Search className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Search Student..."
+                                className="flex h-10 w-full rounded-md border border-input bg-background pl-10 pr-10 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus:ring-1 focus:ring-ring"
+                                value={searchQuery}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    if (selectedStudentId) setSelectedStudentId('');
+                                }}
+                                onFocus={() => setIsSearchFocused(true)}
+                                onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                                onKeyDown={(e) => {
+                                    if (!isSearchFocused) return;
+                                    const options = filteredStudentSearchList;
+
+                                    if (e.key === 'ArrowDown') {
+                                        e.preventDefault();
+                                        setFocusedIndex(prev => (prev < options.length - 1 ? prev + 1 : prev));
+                                    } else if (e.key === 'ArrowUp') {
+                                        e.preventDefault();
+                                        setFocusedIndex(prev => (prev > 0 ? prev - 1 : 0));
+                                    } else if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        if (focusedIndex >= 0 && focusedIndex < options.length) {
+                                            const selected = options[focusedIndex];
+                                            setSearchQuery(selected.name);
+                                            setSelectedStudentId(selected.id);
+                                            setIsSearchFocused(false);
+                                        }
+                                    }
+                                }}
+                            />
+                            {searchQuery && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                        setSearchQuery('');
+                                        setSelectedStudentId('');
+                                    }}
+                                    className="absolute inset-y-0 right-0 h-full w-9 text-muted-foreground hover:text-foreground"
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            )}
+
+                            {isSearchFocused && (searchQuery || filteredStudentSearchList.length > 0) && (
+                                <div className="absolute z-50 mt-1 w-full bg-popover text-popover-foreground rounded-md border shadow-lg animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
+                                    {filteredStudentSearchList.map((s, i) => (
+                                        <div
+                                            key={s.id}
+                                            className={cn(
+                                                "px-4 py-2.5 cursor-pointer text-sm border-b last:border-0",
+                                                focusedIndex === i ? 'bg-blue-50 text-blue-700' : 'hover:bg-muted'
+                                            )}
+                                            onMouseDown={(e) => {
+                                                e.preventDefault();
+                                                setSearchQuery(s.name);
+                                                setSelectedStudentId(s.id);
+                                                setIsSearchFocused(false);
+                                            }}
+                                        >
+                                            <div className="flex flex-col">
+                                                <div className="flex justify-between">
+                                                    <span className="font-bold">{s.name}</span>
+                                                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">{s.class_name}</span>
+                                                </div>
+                                                <div className="text-[10px] text-muted-foreground uppercase tracking-widest">ID: {s.student_id}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {filteredStudentSearchList.length === 0 && (
+                                        <div className="p-4 text-center text-sm text-muted-foreground">No students found</div>
+                                    )}
+                                </div>
                             )}
                         </div>
-                    )}
+                    </div>
                 </div>
             </div>
 
             {ledger.length > 0 && (
-                <div className="rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
-                    <table className="w-full caption-bottom text-sm">
-                        <thead className="[&_tr]:border-b">
-                            <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90">
-                                <th className="h-12 px-4 text-left align-middle font-medium">Date(BS)</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Date(AD)</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium">Particulars</th>
-                                <th className="h-12 px-4 text-right align-middle font-medium">Debit (Due)</th>
-                                <th className="h-12 px-4 text-right align-middle font-medium">Credit (Paid)</th>
-                                <th className="h-12 px-4 text-right align-middle font-medium">Balance</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {ledger.map((entry) => (
-                                <tr key={entry.id} className="border-b transition-colors hover:bg-muted/50">
-                                    <td className="p-4 align-middle font-medium whitespace-nowrap">{toNepali(entry.date)}</td>
-                                    <td className="p-4 align-middle text-muted-foreground whitespace-nowrap">{entry.date}</td>
-                                    <td className="p-4 align-middle">{entry.particulars}</td>
-                                    <td className="p-4 align-middle text-right text-red-600">{entry.debit ? entry.debit.toLocaleString() : '-'}</td>
-                                    <td className="p-4 align-middle text-right text-green-600">{entry.credit ? entry.credit.toLocaleString() : '-'}</td>
-                                    <td className="p-4 align-middle text-right font-bold">{entry.balance.toLocaleString()}</td>
+                <div className="space-y-4">
+                    {/* Mobile Card View */}
+                    <div className="grid grid-cols-1 gap-4 md:hidden">
+                        {ledger.map((entry) => (
+                            <div key={entry.id} className="bg-card rounded-lg border shadow-sm p-4 space-y-3">
+                                <div className="flex justify-between items-start">
+                                    <div className="space-y-0.5">
+                                        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{toNepali(entry.date)}</div>
+                                        <div className="text-[9px] text-muted-foreground">{entry.date}</div>
+                                    </div>
+                                    <div className="text-right">
+                                        {entry.debit && <div className="text-xs font-bold text-red-600">Debit: {entry.debit.toLocaleString()}</div>}
+                                        {entry.credit && <div className="text-xs font-bold text-green-600">Credit: {entry.credit.toLocaleString()}</div>}
+                                    </div>
+                                </div>
+                                <div className="text-sm font-medium text-foreground">{entry.particulars}</div>
+                                <div className="flex justify-between items-center pt-2 border-t mt-2">
+                                    <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Balance</span>
+                                    <span className="font-black text-foreground">NPR {entry.balance.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block rounded-lg border bg-card overflow-hidden shadow-sm">
+                        <table className="w-full caption-bottom text-sm">
+                            <thead className="[&_tr]:border-b">
+                                <tr className="border-b transition-colors bg-blue-600 text-white hover:bg-blue-700 font-bold uppercase text-[11px] tracking-widest">
+                                    <th className="h-12 px-4 text-left align-middle">Date(BS)</th>
+                                    <th className="h-12 px-4 text-left align-middle">Date(AD)</th>
+                                    <th className="h-12 px-4 text-left align-middle">Particulars</th>
+                                    <th className="h-12 px-4 text-right align-middle">Debit (Due)</th>
+                                    <th className="h-12 px-4 text-right align-middle">Credit (Paid)</th>
+                                    <th className="h-12 px-4 text-right align-middle">Balance</th>
                                 </tr>
-                            ))}
-                            <tr className="bg-muted/50 font-bold">
-                                <td colSpan={5} className="p-4 text-right">Closing Balance</td>
-                                <td className="p-4 text-right">{ledger[ledger.length - 1]?.balance.toLocaleString()}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y">
+                                {ledger.map((entry) => (
+                                    <tr key={entry.id} className="transition-colors hover:bg-slate-50">
+                                        <td className="p-4 align-middle font-medium whitespace-nowrap">{toNepali(entry.date)}</td>
+                                        <td className="p-4 align-middle text-muted-foreground text-xs whitespace-nowrap">{entry.date}</td>
+                                        <td className="p-4 align-middle font-medium">{entry.particulars}</td>
+                                        <td className="p-4 align-middle text-right text-red-600 font-bold">{entry.debit ? entry.debit.toLocaleString() : '-'}</td>
+                                        <td className="p-4 align-middle text-right text-green-600 font-bold">{entry.credit ? entry.credit.toLocaleString() : '-'}</td>
+                                        <td className="p-4 align-middle text-right font-black text-lg">NPR {entry.balance.toLocaleString()}</td>
+                                    </tr>
+                                ))}
+                                <tr className="bg-slate-50 font-bold">
+                                    <td colSpan={5} className="p-4 text-right text-[11px] uppercase tracking-widest text-muted-foreground">Closing Balance</td>
+                                    <td className="p-4 text-right font-black text-xl text-blue-700">NPR {ledger[ledger.length - 1]?.balance.toLocaleString()}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )
             }

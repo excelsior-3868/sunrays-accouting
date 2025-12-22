@@ -4,7 +4,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 import RequireAuth from '@/components/auth/RequireAuth';
 import LoginPage from '@/pages/LoginPage';
-import DashboardPage from '@/pages/DashboardPage';
+import DashboardPage from '@/pages/reports/DashboardPage';
 import SettingsPage from '@/pages/SettingsPage';
 import ChartOfAccountsPage from '@/pages/ChartOfAccountsPage';
 import FeeStructuresPage from '@/pages/FeeStructuresPage';

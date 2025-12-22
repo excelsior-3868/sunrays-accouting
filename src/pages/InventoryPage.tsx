@@ -4,6 +4,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { getInventoryItems, createInventoryItem, updateInventoryItem, deleteInventoryItem } from '@/lib/api';
 import { type InventoryItem } from '@/types';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 
 export default function InventoryPage() {
@@ -160,45 +161,63 @@ export default function InventoryPage() {
     const renderTree = (nodes: InventoryItem[], level = 0) => {
         return nodes.map(node => (
             <div key={node.id}>
-                <div className={cn("flex items-center py-3 px-2 hover:bg-muted/50 rounded-md group text-sm", level > 0 && "ml-3 sm:ml-6")}>
-                    <div className="flex-1 flex items-center gap-2 min-w-0">
+                <div className={cn("flex items-center py-2.5 px-2 hover:bg-muted/50 rounded-md group text-sm border-b sm:border-0", level > 0 && "ml-2 sm:ml-6")}>
+                    <div className="flex-1 flex items-center gap-1.5 min-w-0">
                         {node.children && node.children.length > 0 ? (
-                            <button onClick={() => toggleExpand(node.id)} className="p-1 hover:bg-muted rounded text-muted-foreground shrink-0">
+                            <button onClick={() => toggleExpand(node.id)} className="p-1 hover:bg-muted rounded text-muted-foreground shrink-0 transition-transform duration-200">
                                 {expandedNodes.has(node.id) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                             </button>
                         ) : <span className="w-6 shrink-0" />}
 
                         <div className="shrink-0">
                             {node.children && node.children.length > 0 ? (
-                                <Folder className="h-4 w-4 text-blue-500/80" />
+                                <Folder className="h-4 w-4 text-blue-600/90" />
                             ) : (
-                                <Box className="h-4 w-4 text-emerald-500/80" />
+                                <Box className="h-4 w-4 text-red-500/90" />
                             )}
                         </div>
 
-                        <div className="flex flex-col sm:flex-row sm:items-center min-w-0 flex-1">
-                            <span className="font-medium truncate">{node.name}</span>
-                            <div className="flex items-center gap-2 mt-0.5 sm:mt-0">
+                        <div className="flex flex-col min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                                <span className="font-bold whitespace-nowrap truncate">{node.name}</span>
                                 {node.quantity > 0 && (
-                                    <span className="text-[10px] sm:text-xs sm:ml-2 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold border shrink-0">
-                                        Qty: {node.quantity} {node.unit}
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-bold border shrink-0">
+                                        Qty: {node.quantity}
                                     </span>
                                 )}
-                                {node.description && <span className="text-[10px] sm:text-xs text-muted-foreground sm:ml-2 truncate max-w-[120px] sm:max-w-[200px]">{level > 0 ? "" : `- ${node.description}`}</span>}
                             </div>
+                            {node.description && <span className="text-[10px] text-muted-foreground truncate opacity-70 italic">{node.description}</span>}
                         </div>
                     </div>
 
-                    <div className="opacity-100 sm:opacity-0 group-hover:opacity-100 flex gap-1 ml-2 shrink-0">
-                        <button title="Add Stock Item" onClick={() => handleAddChild(node.id)} className="h-7 w-7 sm:h-8 sm:w-8 inline-flex items-center justify-center rounded-md bg-green-50 text-green-600 hover:bg-green-100 transition-colors">
-                            <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                        </button>
-                        <button title="Edit" onClick={() => handleEdit(node)} className="h-7 w-7 sm:h-8 sm:w-8 inline-flex items-center justify-center rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors">
-                            <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                        </button>
-                        <button title="Delete" onClick={() => handleDelete(node.id, node.name)} className="h-7 w-7 sm:h-8 sm:w-8 inline-flex items-center justify-center rounded-md bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
-                            <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                        </button>
+                    <div className="flex gap-1 shrink-0 ml-1">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleAddChild(node.id)}
+                            className="h-7 w-7 bg-green-50 text-green-600 hover:bg-green-100"
+                            title="Add Child"
+                        >
+                            <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(node)}
+                            className="h-7 w-7 bg-blue-50 text-blue-600 hover:bg-blue-100"
+                            title="Edit"
+                        >
+                            <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(node.id, node.name)}
+                            className="h-7 w-7 bg-red-50 text-red-600 hover:bg-red-100"
+                            title="Delete"
+                        >
+                            <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                     </div>
                 </div>
                 {node.children && node.children.length > 0 && expandedNodes.has(node.id) && (
@@ -212,18 +231,49 @@ export default function InventoryPage() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold tracking-tight">Inventory Management</h1>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h1 className="text-2xl font-bold tracking-tight text-blue-600">Inventory Management</h1>
+                <div className="flex gap-2 w-full sm:w-auto">
+                    {items.length === 0 && !loading && (
+                        <Button
+                            onClick={async () => {
+                                const defaults = ['IT and Computer Equipment', 'Furniture and Fixtures', 'Kitchen/Canteen Supplies', 'Teaching and Learning Materials', 'Sports and Physical Education'];
+                                setLoading(true);
+                                try {
+                                    await Promise.all(defaults.map(name => createInventoryItem({ name, quantity: 0, unit: '', description: 'Root Category' })));
+                                    await fetchItems();
+                                    toast({ title: "Success", description: "Default categories initialized." });
+                                } catch (e) {
+                                    console.error(e);
+                                    toast({ variant: "destructive", title: "Error", description: "Failed to seed categories." });
+                                } finally {
+                                    setLoading(false);
+                                }
+                            }}
+                            variant="secondary"
+                            className="flex-1 sm:flex-none h-10 font-bold"
+                        >
+                            <Plus className="mr-2 h-4 w-4" /> Initialize
+                        </Button>
+                    )}
+                    <Button
+                        onClick={() => { setEditingItem(null); setParentForNewItem(undefined); setIsDialogOpen(true); }}
+                        className="flex-1 sm:flex-none h-10 font-bold bg-green-600 hover:bg-green-700 text-white"
+                    >
+                        <Plus className="mr-2 h-4 w-4" /> Add Category
+                    </Button>
+                </div>
+            </div>
 
-            {/* Header / Search Bar */}
-            <div className="bg-card border rounded-lg p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
-                <div className="flex items-center gap-4 w-full sm:w-auto">
-                    <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium">
-                        <Filter className="h-4 w-4" />
-                        <span>Filters:</span>
+            {/* Search / Filter Area */}
+            <div className="bg-card border rounded-lg p-4 shadow-sm">
+                <div className="flex flex-col md:flex-row md:items-center gap-4">
+                    <div className="flex items-center gap-2 shrink-0">
+                        <Filter className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Filters:</span>
                     </div>
 
-                    {/* Enhanced Search Input */}
-                    <div ref={searchContainerRef} className="relative w-full sm:w-[500px]">
+                    <div ref={searchContainerRef} className="relative flex-1">
                         <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground z-10" />
                         <input
                             type="text"
@@ -249,9 +299,8 @@ export default function InventoryPage() {
                             <ChevronDown className="absolute right-3 top-3 h-4 w-4 text-muted-foreground opacity-50 pointer-events-none" />
                         )}
 
-                        {/* Dropdown List */}
                         {isSearchFocused && (
-                            <div className="absolute top-full mt-1 w-full bg-popover text-popover-foreground border rounded-md shadow-md z-50 max-h-[300px] overflow-auto animate-in fade-in zoom-in-95 duration-100">
+                            <div className="absolute top-full mt-1 w-full bg-popover text-popover-foreground border rounded-md shadow-lg z-50 max-h-[300px] overflow-auto animate-in fade-in zoom-in-95 duration-100">
                                 {filteredFlatList.length > 0 ? (
                                     <ul className="py-1">
                                         {filteredFlatList.map((item, index) => (
@@ -262,12 +311,15 @@ export default function InventoryPage() {
                                                     setIsSearchFocused(false);
                                                 }}
                                                 className={cn(
-                                                    "px-3 py-2 text-sm cursor-pointer flex items-center gap-2",
+                                                    "px-3 py-2 text-sm cursor-pointer flex items-center gap-2 border-b last:border-0",
                                                     index === searchSelectedIndex ? "bg-blue-50 text-blue-700" : "hover:bg-muted"
                                                 )}
                                             >
-                                                <span>{item.name}</span>
-                                                {item.quantity > 0 && <span className="ml-auto text-xs text-muted-foreground">{item.quantity} {item.unit}</span>}
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium">{item.name}</span>
+                                                    {item.description && <span className="text-[10px] text-muted-foreground truncate">{item.description}</span>}
+                                                </div>
+                                                {item.quantity > 0 && <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">{item.quantity} {item.unit}</span>}
                                             </li>
                                         ))}
                                     </ul>
@@ -278,42 +330,11 @@ export default function InventoryPage() {
                         )}
                     </div>
                 </div>
-
-                <div className="flex gap-2 w-full sm:w-auto justify-end">
-                    {items.length === 0 && !loading && (
-                        <button
-                            onClick={async () => {
-                                const defaults = ['IT and Computer Equipment', 'Furniture and Fixtures', 'Kitchen/Canteen Supplies', 'Teaching and Learning Materials', 'Sports and Physical Education'];
-                                setLoading(true);
-                                try {
-                                    await Promise.all(defaults.map(name => createInventoryItem({ name, quantity: 0, unit: '', description: 'Root Category' })));
-                                    await fetchItems();
-                                    toast({ title: "Success", description: "Default categories initialized." });
-                                } catch (e) {
-                                    console.error(e);
-                                    toast({ variant: "destructive", title: "Error", description: "Failed to seed categories." });
-                                } finally {
-                                    setLoading(false);
-                                }
-                            }}
-                            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-4 py-2"
-                        >
-                            <Plus className="mr-2 h-4 w-4" /> Initialize Defaults
-                        </button>
-                    )}
-
-                    <button
-                        onClick={() => { setEditingItem(null); setParentForNewItem(undefined); setIsDialogOpen(true); }}
-                        className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2"
-                    >
-                        <Plus className="mr-2 h-4 w-4" /> Add Category
-                    </button>
-                </div>
             </div>
 
             <div className="border rounded-md p-4 bg-card min-h-[400px]">
                 {loading ? (
-                    <div className="text-center text-muted-foreground">Loading...</div>
+                    <div className="text-center text-muted-foreground py-10">Loading...</div>
                 ) : isSearching ? (
                     <div className="space-y-2">
                         {filteredFlatList.length > 0 ? (
@@ -348,57 +369,58 @@ export default function InventoryPage() {
             </div>
 
             {isDialogOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                    <div className="bg-background rounded-lg shadow-lg w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
-                        <h3 className="text-lg font-semibold mb-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-background rounded-lg shadow-lg w-full max-w-md p-6 animate-in fade-in zoom-in duration-200 overflow-y-auto max-h-[90vh]">
+                        <h3 className="text-lg font-semibold mb-4 text-blue-600">
                             {editingItem ? 'Edit Item' : parentForNewItem ? 'Add New Item' : 'Add New Category'}
                         </h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Name</label>
+                                <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Name *</label>
                                 <input
                                     name="name"
                                     required
                                     defaultValue={editingItem?.name}
                                     placeholder="e.g., Whiteboard Markers"
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus:ring-1 focus:ring-ring"
                                 />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">Quantity</label>
+                                    <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Quantity</label>
                                     <input
                                         type="number"
                                         name="quantity"
                                         defaultValue={editingItem?.quantity || 0}
                                         min="0"
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus:ring-1 focus:ring-ring"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">Unit</label>
+                                    <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Unit</label>
                                     <input
                                         name="unit"
                                         defaultValue={editingItem?.unit || 'pcs'}
                                         placeholder="pieces, kg, etc."
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus:ring-1 focus:ring-ring"
                                     />
                                 </div>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Description (Optional)</label>
+                                <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Description</label>
                                 <textarea
                                     name="description"
+                                    placeholder="Additional details..."
                                     defaultValue={editingItem?.description || ''}
-                                    className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus:ring-1 focus:ring-ring"
                                 />
                             </div>
 
-                            <div className="flex justify-end gap-2 mt-6">
-                                <button type="button" onClick={() => { setIsDialogOpen(false); setEditingItem(null); setParentForNewItem(undefined); }} className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground">Cancel</button>
-                                <button type="submit" className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90">{editingItem ? 'Update' : 'Create'}</button>
+                            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 mt-6 pt-4 border-t">
+                                <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); setEditingItem(null); setParentForNewItem(undefined); }} className="w-full sm:w-auto">Cancel</Button>
+                                <Button type="submit" className="w-full sm:w-auto font-bold bg-blue-600 hover:bg-blue-700 text-white">{editingItem ? 'Update Item' : 'Create Item'}</Button>
                             </div>
                         </form>
                     </div>

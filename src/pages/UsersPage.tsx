@@ -6,6 +6,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { type Role } from '@/types';
 import { usePermission } from '@/hooks/usePermission';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -278,14 +279,15 @@ export default function UsersPage() {
     return (
         <div className="space-y-6">
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Users</h2>
+                    <h1 className="text-2xl font-bold tracking-tight text-blue-600">Users</h1>
                     <p className="text-muted-foreground">Manage system users and access.</p>
                 </div>
                 {canManage && (
                     <Button
                         onClick={() => setIsCreateModalOpen(true)}
+                        className="w-full sm:w-auto h-10 font-bold bg-green-600 hover:bg-green-700 text-white"
                     >
                         <UserPlus className="mr-2 h-4 w-4" />
                         Add User
@@ -294,87 +296,159 @@ export default function UsersPage() {
             </div>
 
             {/* Filter Bar */}
-            <div className="flex flex-wrap items-center gap-4 bg-card p-4 rounded-lg border">
-                <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Filters:</span>
-                </div>
-                <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <input
-                        type="search"
-                        placeholder="Search users..."
-                        value={searchQuery}
-                        onChange={(e) => {
-                            setSearchQuery(e.target.value);
-                            setIsSearchOpen(true);
-                        }}
-                        onFocus={() => setIsSearchOpen(true)}
-                        onBlur={() => setTimeout(() => setIsSearchOpen(false), 200)}
-                        onKeyDown={handleKeyDown}
-                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pl-9 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    />
-                    {isSearchOpen && (searchQuery.length > 0 || users.length > 0) && (
-                        <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground rounded-md border shadow-md animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
-                            {filteredUsers.length > 0 ? (
-                                filteredUsers.map((user, index) => (
-                                    <div
-                                        key={user.id}
-                                        className={`px-3 py-2 cursor-pointer text-sm ${index === selectedIndex ? "bg-accent" : "hover:bg-accent"}`}
-                                        onMouseDown={(e) => {
-                                            e.preventDefault();
-                                            setSearchQuery(user.full_name || user.email);
-                                            setIsSearchOpen(false);
-                                        }}
-                                    >
-                                        <div className="font-medium">{user.full_name || 'No Name'}</div>
-                                        <div className="text-xs text-muted-foreground">{user.email}</div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="p-2 text-sm text-muted-foreground text-center">No users found</div>
-                            )}
-                        </div>
-                    )}
+            <div className="bg-card border rounded-lg p-4 shadow-sm">
+                <div className="flex flex-col md:flex-row md:items-center gap-4">
+                    <div className="flex items-center gap-2 shrink-0">
+                        <Filter className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Filters:</span>
+                    </div>
+
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <input
+                            type="search"
+                            placeholder="Search users..."
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setIsSearchOpen(true);
+                            }}
+                            onFocus={() => setIsSearchOpen(true)}
+                            onBlur={() => setTimeout(() => setIsSearchOpen(false), 200)}
+                            onKeyDown={handleKeyDown}
+                            className="flex h-10 w-full rounded-md border border-input bg-transparent pl-10 pr-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus:ring-1 focus:ring-ring"
+                        />
+                        {isSearchOpen && (searchQuery.length > 0 || users.length > 0) && (
+                            <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground rounded-md border shadow-lg animate-in fade-in-0 zoom-in-95 max-h-[300px] overflow-y-auto">
+                                {filteredUsers.length > 0 ? (
+                                    <ul className="py-1">
+                                        {filteredUsers.map((user, index) => (
+                                            <li
+                                                key={user.id}
+                                                className={cn(
+                                                    "px-3 py-2 cursor-pointer text-sm border-b last:border-0",
+                                                    index === selectedIndex ? "bg-blue-50 text-blue-700" : "hover:bg-muted"
+                                                )}
+                                                onMouseDown={(e) => {
+                                                    e.preventDefault();
+                                                    setSearchQuery(user.full_name || user.email);
+                                                    setIsSearchOpen(false);
+                                                }}
+                                            >
+                                                <div className="font-medium">{user.full_name || 'No Name'}</div>
+                                                <div className="text-[10px] text-muted-foreground">{user.email}</div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <div className="p-4 text-sm text-muted-foreground text-center">No users found</div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
-            <div className="rounded-lg border bg-white overflow-hidden">
+            {/* Mobile List View (Cards) */}
+            <div className="grid grid-cols-1 gap-4 sm:hidden">
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center p-12 bg-card border rounded-lg">
+                        <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-2" />
+                        <p className="text-sm text-muted-foreground font-medium">Loading users...</p>
+                    </div>
+                ) : filteredUsers.length === 0 ? (
+                    <div className="p-8 text-center bg-card border rounded-lg text-muted-foreground">
+                        No users found.
+                    </div>
+                ) : (
+                    filteredUsers.map((user) => (
+                        <div key={user.id} className="bg-card border rounded-lg p-4 shadow-sm hover:ring-1 hover:ring-blue-500 transition-all">
+                            <div className="flex items-start justify-between mb-3">
+                                <div className="min-w-0">
+                                    <h3 className="font-bold text-lg text-foreground truncate">{user.full_name || '-'}</h3>
+                                    <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                                </div>
+                                <span className={cn(
+                                    "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+                                    user.role?.name === 'Super Admin' ? 'bg-red-50 text-red-700 border-red-100' :
+                                        user.role?.name === 'Admin' ? 'bg-orange-50 text-orange-700 border-orange-100' :
+                                            'bg-blue-50 text-blue-700 border-blue-100'
+                                )}>
+                                    {user.role?.name || 'User'}
+                                </span>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-3 border-t">
+                                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest whitespace-nowrap">
+                                    Joined: {new Date(user.created_at).toLocaleDateString()}
+                                </span>
+                                {canManage && (
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={() => handleEdit(user)}
+                                            className="h-8 w-8 p-0 text-blue-600 bg-blue-50 hover:bg-blue-100"
+                                        >
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={() => handleDeleteClick(user)}
+                                            className="h-8 w-8 p-0 text-red-600 bg-red-50 hover:bg-red-100"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden sm:block rounded-lg border bg-white overflow-hidden shadow-sm">
                 <div className="relative w-full overflow-auto">
                     <table className="w-full caption-bottom text-sm text-left">
                         <thead className="[&_tr]:border-b">
-                            <tr className="border-b transition-colors bg-blue-600 text-primary-foreground hover:bg-blue-600/90 data-[state=selected]:bg-muted">
-                                <th className="h-10 px-4 text-left align-middle font-medium">Name</th>
-                                <th className="h-10 px-4 text-left align-middle font-medium">Email</th>
-                                <th className="h-10 px-4 text-left align-middle font-medium">Role</th>
-                                <th className="h-10 px-4 text-left align-middle font-medium">Created At</th>
-                                {canManage && <th className="h-10 px-4 text-right align-middle font-medium">Actions</th>}
+                            <tr className="border-b transition-colors bg-blue-600 text-white hover:bg-blue-700">
+                                <th className="h-12 px-4 text-left align-middle font-bold uppercase text-[11px] tracking-widest">Name</th>
+                                <th className="h-12 px-4 text-left align-middle font-bold uppercase text-[11px] tracking-widest">Email</th>
+                                <th className="h-12 px-4 text-left align-middle font-bold uppercase text-[11px] tracking-widest">Role</th>
+                                <th className="h-12 px-4 text-left align-middle font-bold uppercase text-[11px] tracking-widest">Joined</th>
+                                {canManage && <th className="h-12 px-4 text-right align-middle font-bold uppercase text-[11px] tracking-widest">Actions</th>}
                             </tr>
                         </thead>
                         <tbody className="[&_tr:last-child]:border-0">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={canManage ? 5 : 4} className="p-4 text-center">
-                                        <Loader2 className="h-5 w-5 animate-spin mx-auto" />
-                                        Loading...
+                                    <td colSpan={canManage ? 5 : 4} className="p-8 text-center">
+                                        <Loader2 className="h-6 w-6 animate-spin mx-auto text-blue-600 mb-2" />
+                                        <p className="text-muted-foreground font-medium">Loading users...</p>
                                     </td>
                                 </tr>
                             ) : filteredUsers.length === 0 ? (
                                 <tr>
-                                    <td colSpan={canManage ? 5 : 4} className="p-4 text-center">No users found.</td>
+                                    <td colSpan={canManage ? 5 : 4} className="p-8 text-center text-muted-foreground">No users found.</td>
                                 </tr>
                             ) : (
                                 filteredUsers.map((user) => (
-                                    <tr key={user.id} className="border-b transition-colors hover:bg-muted/50">
-                                        <td className="p-4 align-middle font-medium">{user.full_name || '-'}</td>
-                                        <td className="p-4 align-middle">{user.email}</td>
-                                        <td className="p-4 align-middle capitalize">
-                                            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent ${user.role?.name === 'Admin' || user.role?.name === 'Super Admin' ? 'bg-red-500/15 text-red-700' : 'bg-blue-500/15 text-blue-700'
-                                                }`}>
+                                    <tr key={user.id} className="border-b transition-colors hover:bg-slate-50">
+                                        <td className="p-4 align-middle font-bold text-slate-900">{user.full_name || '-'}</td>
+                                        <td className="p-4 align-middle text-slate-600">{user.email}</td>
+                                        <td className="p-4 align-middle">
+                                            <span className={cn(
+                                                "inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors",
+                                                user.role?.name === 'Super Admin' ? 'bg-red-50 text-red-700 border-red-100' :
+                                                    user.role?.name === 'Admin' ? 'bg-orange-50 text-orange-700 border-orange-100' :
+                                                        'bg-blue-50 text-blue-700 border-blue-100'
+                                            )}>
                                                 {user.role?.name || 'User'}
                                             </span>
                                         </td>
-                                        <td className="p-4 align-middle">{new Date(user.created_at).toLocaleDateString()}</td>
+                                        <td className="p-4 align-middle text-slate-500">{new Date(user.created_at).toLocaleDateString()}</td>
                                         {canManage && (
                                             <td className="p-4 align-middle text-right">
                                                 <div className="flex items-center justify-end gap-2">
@@ -382,7 +456,7 @@ export default function UsersPage() {
                                                         variant="ghost"
                                                         size="icon"
                                                         onClick={() => handleEdit(user)}
-                                                        className="h-8 w-8 text-primary hover:bg-primary/20"
+                                                        className="h-8 w-8 text-blue-600 hover:bg-blue-50"
                                                         title="Edit User"
                                                     >
                                                         <Pencil className="h-4 w-4" />
@@ -391,7 +465,7 @@ export default function UsersPage() {
                                                         variant="ghost"
                                                         size="icon"
                                                         onClick={() => handleDeleteClick(user)}
-                                                        className="h-8 w-8 text-red-600 hover:bg-red-100"
+                                                        className="h-8 w-8 text-red-600 hover:bg-red-50"
                                                         title="Delete User"
                                                     >
                                                         <Trash2 className="h-4 w-4" />
@@ -411,36 +485,36 @@ export default function UsersPage() {
             {isCreateModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
                     <div className="w-full max-w-md rounded-lg bg-background p-6 shadow-lg bg-white">
-                        <h3 className="mb-4 text-lg font-semibold">Create New User</h3>
+                        <h3 className="mb-4 text-lg font-bold text-blue-600 uppercase tracking-widest">Create New User</h3>
                         <form onSubmit={handleCreateUser} className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Full Name (Display Name)</label>
+                                <label className="text-[11px] font-bold uppercase text-muted-foreground tracking-widest">Full Name *</label>
                                 <input
                                     type="text"
                                     required
                                     value={newUserName}
                                     onChange={(e) => setNewUserName(e.target.value)}
-                                    className="flex h-9 w-full rounded-md border border-input px-3 py-1 text-sm bg-transparent"
-                                    placeholder="John Doe"
+                                    className="flex h-10 w-full rounded-md border border-input px-3 py-2 text-sm bg-transparent shadow-sm focus-visible:outline-none focus:ring-1 focus:ring-ring"
+                                    placeholder="Enter full name"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Email</label>
+                                <label className="text-[11px] font-bold uppercase text-muted-foreground tracking-widest">Email *</label>
                                 <input
                                     type="email"
                                     required
                                     value={newUserEmail}
                                     onChange={(e) => setNewUserEmail(e.target.value)}
-                                    className="flex h-9 w-full rounded-md border border-input px-3 py-1 text-sm bg-transparent"
+                                    className="flex h-10 w-full rounded-md border border-input px-3 py-2 text-sm bg-transparent shadow-sm focus-visible:outline-none focus:ring-1 focus:ring-ring"
                                     placeholder="user@example.com"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Role</label>
+                                <label className="text-[11px] font-bold uppercase text-muted-foreground tracking-widest">Role *</label>
                                 <select
                                     value={newUserRoleId}
                                     onChange={(e) => setNewUserRoleId(e.target.value)}
-                                    className="flex h-9 w-full rounded-md border border-input px-3 py-1 text-sm bg-transparent"
+                                    className="flex h-10 w-full rounded-md border border-input px-3 py-2 text-sm bg-transparent shadow-sm focus-visible:outline-none focus:ring-1 focus:ring-ring"
                                 >
                                     <option value="" disabled>Select Role</option>
                                     {roles.map(role => (
@@ -449,15 +523,15 @@ export default function UsersPage() {
                                 </select>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Password</label>
-                                <p className="text-xs text-muted-foreground">User will receive an email to set their password (if configured), or set initial here.</p>
+                                <label className="text-[11px] font-bold uppercase text-muted-foreground tracking-widest">Password *</label>
+                                <p className="text-[10px] text-muted-foreground italic mb-1">Set initial password for this user.</p>
                                 <div className="relative">
                                     <input
                                         type={showPassword ? "text" : "password"}
                                         value={newUserPassword}
                                         onChange={(e) => setNewUserPassword(e.target.value)}
-                                        className="flex h-9 w-full rounded-md border border-input px-3 py-1 pr-10 text-sm bg-transparent"
-                                        placeholder="Initial password (required)"
+                                        className="flex h-10 w-full rounded-md border border-input px-3 py-2 pr-10 text-sm bg-transparent shadow-sm focus-visible:outline-none focus:ring-1 focus:ring-ring"
+                                        placeholder="Min 6 characters"
                                     />
                                     <Button
                                         type="button"
@@ -472,14 +546,14 @@ export default function UsersPage() {
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Confirm Password</label>
+                                <label className="text-[11px] font-bold uppercase text-muted-foreground tracking-widest">Confirm Password *</label>
                                 <div className="relative">
                                     <input
                                         type={showConfirmPassword ? "text" : "password"}
                                         value={newUserConfirmPassword}
                                         onChange={(e) => setNewUserConfirmPassword(e.target.value)}
-                                        className="flex h-9 w-full rounded-md border border-input px-3 py-1 pr-10 text-sm bg-transparent"
-                                        placeholder="Confirm password"
+                                        className="flex h-10 w-full rounded-md border border-input px-3 py-2 pr-10 text-sm bg-transparent shadow-sm focus-visible:outline-none focus:ring-1 focus:ring-ring"
+                                        placeholder="Confirm selection"
                                     />
                                     <Button
                                         type="button"
@@ -493,17 +567,19 @@ export default function UsersPage() {
                                     </Button>
                                 </div>
                             </div>
-                            <div className="flex justify-end gap-2 pt-4">
+                            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4 border-t mt-4">
                                 <Button
                                     type="button"
                                     variant="outline"
                                     onClick={() => setIsCreateModalOpen(false)}
+                                    className="w-full sm:w-auto"
                                 >
                                     Cancel
                                 </Button>
                                 <Button
                                     type="submit"
                                     disabled={createLoading}
+                                    className="w-full sm:w-auto font-bold bg-blue-600 hover:bg-blue-700 text-white"
                                 >
                                     {createLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Create User
@@ -543,17 +619,19 @@ export default function UsersPage() {
                                     ))}
                                 </select>
                             </div>
-                            <div className="flex justify-end gap-2 pt-4">
+                            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4 border-t mt-4">
                                 <Button
                                     type="button"
                                     variant="outline"
                                     onClick={() => setIsEditModalOpen(false)}
+                                    className="w-full sm:w-auto"
                                 >
                                     Cancel
                                 </Button>
                                 <Button
                                     type="submit"
                                     disabled={updateLoading}
+                                    className="w-full sm:w-auto font-bold bg-blue-600 hover:bg-blue-700 text-white"
                                 >
                                     {updateLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Update User
