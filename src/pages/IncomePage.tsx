@@ -5,6 +5,7 @@ import { getPayments, recordDirectIncome, getGLHeads, getFiscalYears, getInvoice
 import { type Payment, type GLHead, type FiscalYear } from '@/types';
 import SearchableSelect from '@/components/SearchableSelect';
 import { usePermission } from '@/hooks/usePermission';
+import { Button } from '@/components/ui/button';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -234,12 +235,11 @@ export default function IncomePage() {
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">Income</h1>
                 {can('income:create') && (
-                    <button
+                    <Button
                         onClick={() => setIsDialogOpen(true)}
-                        className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
                     >
                         <Plus className="mr-2 h-4 w-4" /> Add Income
-                    </button>
+                    </Button>
                 )}
             </div>
 
@@ -315,13 +315,14 @@ export default function IncomePage() {
                         Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
                     </div>
                     <div className="flex items-center gap-2">
-                        <button
+                        <Button
+                            variant="outline"
+                            size="icon"
                             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                             disabled={currentPage === 1}
-                            className="inline-flex items-center justify-center h-8 w-8 rounded border bg-background hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <ChevronLeft className="h-4 w-4" />
-                        </button>
+                        </Button>
 
                         <div className="flex items-center gap-1">
                             {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -336,26 +337,25 @@ export default function IncomePage() {
                                         {index > 0 && array[index - 1] !== page - 1 && (
                                             <span className="px-2 text-muted-foreground">...</span>
                                         )}
-                                        <button
+                                        <Button
+                                            variant={currentPage === page ? "default" : "outline"}
+                                            size="icon"
                                             onClick={() => setCurrentPage(page)}
-                                            className={`inline-flex items-center justify-center h-8 w-8 rounded border ${currentPage === page
-                                                ? 'bg-primary text-primary-foreground'
-                                                : 'bg-background hover:bg-accent'
-                                                }`}
                                         >
                                             {page}
-                                        </button>
+                                        </Button>
                                     </div>
                                 ))}
                         </div>
 
-                        <button
+                        <Button
+                            variant="outline"
+                            size="icon"
                             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                             disabled={currentPage === totalPages}
-                            className="inline-flex items-center justify-center h-8 w-8 rounded border bg-background hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <ChevronRight className="h-4 w-4" />
-                        </button>
+                        </Button>
                     </div>
                 </div>
             )}
@@ -455,8 +455,8 @@ export default function IncomePage() {
                             </div>
 
                             <div className="flex justify-end gap-2 mt-6">
-                                <button type="button" onClick={() => setIsDialogOpen(false)} className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground">Cancel</button>
-                                <button type="submit" className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90">Record Income</button>
+                                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                                <Button type="submit">Record Income</Button>
                             </div>
                         </form>
                     </div>

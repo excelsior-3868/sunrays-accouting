@@ -8,6 +8,7 @@ import {
 } from '@/lib/api';
 import { type SalaryStructure, type FiscalYear, type GLHead, type SalaryStructureItem } from '@/types';
 import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function SalaryStructuresPage() {
     const { toast } = useToast();
@@ -166,12 +167,11 @@ export default function SalaryStructuresPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">Salary Structures</h1>
-                <button
+                <Button
                     onClick={handleOpenCreate}
-                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2"
                 >
                     <Plus className="mr-2 h-4 w-4" /> Define Salary
-                </button>
+                </Button>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -212,12 +212,12 @@ export default function SalaryStructuresPage() {
                                 </div>
 
                                 <div className="flex justify-end gap-2 pt-2 border-t mt-2">
-                                    <button onClick={() => handleEdit(struct)} className="p-2 hover:bg-muted rounded-md text-blue-600">
+                                    <Button variant="ghost" size="icon" onClick={() => handleEdit(struct)} className="p-2 hover:bg-muted rounded-md text-blue-600">
                                         <Pencil className="h-4 w-4" />
-                                    </button>
-                                    <button onClick={() => handleDelete(struct.id)} className="p-2 hover:bg-muted rounded-md text-red-600">
+                                    </Button>
+                                    <Button variant="ghost" size="icon" onClick={() => handleDelete(struct.id)} className="p-2 hover:bg-muted rounded-md text-red-600">
                                         <Trash2 className="h-4 w-4" />
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -231,7 +231,7 @@ export default function SalaryStructuresPage() {
                     <div className="bg-background rounded-lg shadow-lg w-full max-w-3xl p-6 animate-in fade-in zoom-in duration-200">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-lg font-semibold">{editingId ? 'Edit Salary Structure' : 'New Salary Structure'}</h2>
-                            <button onClick={() => setIsDialogOpen(false)}><X className="h-5 w-5" /></button>
+                            <Button variant="ghost" size="icon" onClick={() => setIsDialogOpen(false)}><X className="h-5 w-5" /></Button>
                         </div>
 
                         <form onSubmit={handleSave} className="space-y-6">
@@ -266,9 +266,14 @@ export default function SalaryStructuresPage() {
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center">
                                     <label className="text-sm font-medium">Structure Components</label>
-                                    <button type="button" onClick={addItem} className="text-sm flex items-center text-primary hover:underline">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        onClick={addItem}
+                                        className="text-sm flex items-center text-primary"
+                                    >
                                         <PlusCircle className="h-4 w-4 mr-1" /> Add Component
-                                    </button>
+                                    </Button>
                                 </div>
 
                                 <div className="space-y-2 max-h-[300px] overflow-y-auto border rounded-md p-2">
@@ -296,9 +301,9 @@ export default function SalaryStructuresPage() {
                                                 className="w-24 h-9 rounded-md border border-input bg-background px-3 text-sm"
                                                 placeholder="Amount"
                                             />
-                                            <button type="button" onClick={() => removeItem(index)} className="text-red-500 hover:bg-red-50 p-1 rounded">
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeItem(index)} className="text-red-500 hover:bg-red-50">
                                                 <X className="h-4 w-4" />
-                                            </button>
+                                            </Button>
                                         </div>
                                     ))}
                                     {formData.items.length === 0 && <p className="text-sm text-muted-foreground text-center py-2">No components added.</p>}
@@ -312,8 +317,8 @@ export default function SalaryStructuresPage() {
                             </div>
 
                             <div className="flex justify-end gap-2 pt-4 border-t">
-                                <button type="button" onClick={() => setIsDialogOpen(false)} className="px-4 py-2 text-sm font-medium border rounded-md hover:bg-accent">Cancel</button>
-                                <button type="submit" className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90">Save Structure</button>
+                                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                                <Button type="submit">Save Structure</Button>
                             </div>
                         </form>
                     </div>

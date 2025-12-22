@@ -7,6 +7,8 @@ import {
     getStaffMembers, createStaffMember, updateStaffMember, deleteStaffMember
 } from '@/lib/api';
 import { type Teacher, type Staff } from '@/types';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 export default function StaffsPage() {
     const { toast } = useToast();
@@ -193,31 +195,37 @@ export default function StaffsPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">Staff Management</h1>
-                <button
+                <Button
                     onClick={handleOpenCreate}
-                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2"
                 >
                     <Plus className="mr-2 h-4 w-4" /> Add {activeTab === 'teachers' ? 'Teacher' : 'Staff'}
-                </button>
+                </Button>
             </div>
 
             {/* Tabs */}
             <div className="border-b flex gap-6">
-                <button
+                <Button
+                    variant="ghost"
                     onClick={() => setActiveTab('teachers')}
-                    className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'teachers' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                    className={cn(
+                        "rounded-none border-b-2 bg-transparent px-2 pb-2 pt-1 font-medium hover:bg-transparent",
+                        activeTab === 'teachers' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                    )}
                 >
                     Teachers
-                </button>
-                <button
+                </Button>
+                <Button
+                    variant="ghost"
                     onClick={() => setActiveTab('staff')}
-                    className={`pb-2 text-sm font-medium transition-colors ${activeTab === 'staff' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                    className={cn(
+                        "rounded-none border-b-2 bg-transparent px-2 pb-2 pt-1 font-medium hover:bg-transparent",
+                        activeTab === 'staff' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                    )}
                 >
                     Support Staff
-                </button>
+                </Button>
             </div>
 
-            {/* Search */}
             {/* Filter Bar */}
             <div className="bg-card p-4 rounded-lg border shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -295,12 +303,24 @@ export default function StaffsPage() {
                                     )}
                                 </div>
                                 <div className="sm:col-span-2 flex justify-end gap-2 mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0">
-                                    <button onClick={() => handleEdit(item)} className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors" title="Edit">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleEdit(item)}
+                                        className="h-9 w-9 border border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-100"
+                                        title="Edit"
+                                    >
                                         <Pencil className="h-4 w-4" />
-                                    </button>
-                                    <button onClick={() => handleDelete(item.id)} className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-red-100 bg-red-50 text-red-600 hover:bg-red-100 transition-colors" title="Delete">
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleDelete(item.id)}
+                                        className="h-9 w-9 border border-red-100 bg-red-50 text-red-600 hover:bg-red-100"
+                                        title="Delete"
+                                    >
                                         <Trash2 className="h-4 w-4" />
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         ))}
@@ -319,7 +339,7 @@ export default function StaffsPage() {
                     <div className="bg-background rounded-lg shadow-lg w-full max-w-lg p-6 animate-in fade-in zoom-in duration-200">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-lg font-semibold">{editingId ? 'Edit' : 'Add'} {activeTab === 'teachers' ? 'Teacher' : 'Staff Member'}</h2>
-                            <button onClick={() => setIsDialogOpen(false)}><X className="h-5 w-5" /></button>
+                            <Button variant="ghost" size="icon" onClick={() => setIsDialogOpen(false)}><X className="h-5 w-5" /></Button>
                         </div>
 
                         <form onSubmit={handleSave} className="space-y-4">
@@ -358,8 +378,8 @@ export default function StaffsPage() {
                             </div>
 
                             <div className="flex justify-end gap-2 pt-4">
-                                <button type="button" onClick={() => setIsDialogOpen(false)} className="px-4 py-2 text-sm font-medium border rounded-md hover:bg-accent">Cancel</button>
-                                <button type="submit" className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90">Save</button>
+                                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                                <Button type="submit">Save</Button>
                             </div>
                         </form>
                     </div>

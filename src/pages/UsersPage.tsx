@@ -5,6 +5,7 @@ import { Search, Loader2, UserPlus, Eye, EyeOff, Pencil, Trash2, Filter } from '
 import { useToast } from '@/components/ui/use-toast';
 import { type Role } from '@/types';
 import { usePermission } from '@/hooks/usePermission';
+import { Button } from '@/components/ui/button';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -283,13 +284,12 @@ export default function UsersPage() {
                     <p className="text-muted-foreground">Manage system users and access.</p>
                 </div>
                 {canManage && (
-                    <button
+                    <Button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                     >
-                        <UserPlus className="h-4 w-4" />
+                        <UserPlus className="mr-2 h-4 w-4" />
                         Add User
-                    </button>
+                    </Button>
                 )}
             </div>
 
@@ -378,20 +378,24 @@ export default function UsersPage() {
                                         {canManage && (
                                             <td className="p-4 align-middle text-right">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    <button
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
                                                         onClick={() => handleEdit(user)}
-                                                        className="inline-flex items-center justify-center rounded-md bg-primary/10 p-2 text-primary transition-colors hover:bg-primary/20"
+                                                        className="h-8 w-8 text-primary hover:bg-primary/20"
                                                         title="Edit User"
                                                     >
                                                         <Pencil className="h-4 w-4" />
-                                                    </button>
-                                                    <button
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
                                                         onClick={() => handleDeleteClick(user)}
-                                                        className="inline-flex items-center justify-center rounded-md bg-red-50 p-2 text-red-600 transition-colors hover:bg-red-100"
+                                                        className="h-8 w-8 text-red-600 hover:bg-red-100"
                                                         title="Delete User"
                                                     >
                                                         <Trash2 className="h-4 w-4" />
-                                                    </button>
+                                                    </Button>
                                                 </div>
                                             </td>
                                         )}
@@ -455,14 +459,16 @@ export default function UsersPage() {
                                         className="flex h-9 w-full rounded-md border border-input px-3 py-1 pr-10 text-sm bg-transparent"
                                         placeholder="Initial password (required)"
                                     />
-                                    <button
+                                    <Button
                                         type="button"
+                                        variant="ghost"
+                                        size="icon"
                                         tabIndex={-1}
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-0 top-0 flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-foreground"
+                                        className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
                                     >
                                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                             <div className="space-y-2">
@@ -475,32 +481,33 @@ export default function UsersPage() {
                                         className="flex h-9 w-full rounded-md border border-input px-3 py-1 pr-10 text-sm bg-transparent"
                                         placeholder="Confirm password"
                                     />
-                                    <button
+                                    <Button
                                         type="button"
+                                        variant="ghost"
+                                        size="icon"
                                         tabIndex={-1}
                                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        className="absolute right-0 top-0 flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-foreground"
+                                        className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
                                     >
                                         {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                             <div className="flex justify-end gap-2 pt-4">
-                                <button
+                                <Button
                                     type="button"
+                                    variant="outline"
                                     onClick={() => setIsCreateModalOpen(false)}
-                                    className="rounded-md px-4 py-2 text-sm font-medium hover:bg-gray-100"
                                 >
                                     Cancel
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="submit"
                                     disabled={createLoading}
-                                    className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                                 >
-                                    {createLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                                    {createLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Create User
-                                </button>
+                                </Button>
                             </div>
                         </form>
                     </div>
@@ -537,21 +544,20 @@ export default function UsersPage() {
                                 </select>
                             </div>
                             <div className="flex justify-end gap-2 pt-4">
-                                <button
+                                <Button
                                     type="button"
+                                    variant="outline"
                                     onClick={() => setIsEditModalOpen(false)}
-                                    className="rounded-md px-4 py-2 text-sm font-medium hover:bg-gray-100"
                                 >
                                     Cancel
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="submit"
                                     disabled={updateLoading}
-                                    className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                                 >
-                                    {updateLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                                    {updateLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Update User
-                                </button>
+                                </Button>
                             </div>
                         </form>
                     </div>

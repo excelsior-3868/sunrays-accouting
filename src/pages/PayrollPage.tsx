@@ -1,5 +1,6 @@
+
 import { useEffect, useState } from 'react';
-import { Plus, Loader2, Trash2, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Loader2, Trash2, Eye, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -16,6 +17,7 @@ import { type PayrollRun, type FiscalYear, type GLHead } from '@/types';
 import SearchableSelect from '@/components/SearchableSelect';
 import { usePermission } from '@/hooks/usePermission';
 import { toNepali } from '@/lib/nepaliDate';
+import { Button } from '@/components/ui/button';
 
 export default function PayrollPage() {
     const { can } = usePermission();
@@ -248,9 +250,9 @@ export default function PayrollPage() {
                     </select>
 
                     {can('payroll.manage') && (
-                        <button onClick={() => setIsDialogOpen(true)} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-10 sm:h-9 px-4 py-2 w-full sm:w-auto">
+                        <Button onClick={() => setIsDialogOpen(true)} className="sm:w-auto md:w-auto">
                             <Plus className="mr-2 h-4 w-4" /> Run Payroll
-                        </button>
+                        </Button>
                     )}
                 </div>
             </div>
@@ -283,22 +285,26 @@ export default function PayrollPage() {
                                     </td>
                                     <td className="p-4 align-middle">
                                         <div className="flex items-center gap-2">
-                                            <button
-                                                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 w-9 text-blue-600"
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
                                                 onClick={() => handleView(run.id)}
                                                 title={run.is_posted ? "View Details" : "View & Approve"}
+                                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                             >
                                                 <Eye size={18} />
-                                            </button>
+                                            </Button>
 
                                             {!run.is_posted && can('payroll.manage') && (
-                                                <button
-                                                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 w-9 text-red-600"
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
                                                     onClick={() => handleDelete(run.id)}
                                                     title="Delete Run"
+                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                                 >
                                                     <Trash2 size={18} />
-                                                </button>
+                                                </Button>
                                             )}
                                         </div>
                                     </td>
@@ -320,13 +326,15 @@ export default function PayrollPage() {
                         Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
                     </div>
                     <div className="flex items-center gap-2">
-                        <button
+                        <Button
+                            variant="outline"
+                            size="icon"
                             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                             disabled={currentPage === 1}
-                            className="inline-flex items-center justify-center h-8 w-8 rounded border bg-background hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="h-8 w-8"
                         >
                             <ChevronLeft className="h-4 w-4" />
-                        </button>
+                        </Button>
 
                         <div className="flex items-center gap-1">
                             {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -341,26 +349,27 @@ export default function PayrollPage() {
                                         {index > 0 && array[index - 1] !== page - 1 && (
                                             <span className="px-2 text-muted-foreground">...</span>
                                         )}
-                                        <button
+                                        <Button
+                                            variant={currentPage === page ? "default" : "outline"}
+                                            size="icon"
                                             onClick={() => setCurrentPage(page)}
-                                            className={`inline-flex items-center justify-center h-8 w-8 rounded border ${currentPage === page
-                                                ? 'bg-primary text-primary-foreground'
-                                                : 'bg-background hover:bg-accent'
-                                                }`}
+                                            className="h-8 w-8 text-xs"
                                         >
                                             {page}
-                                        </button>
+                                        </Button>
                                     </div>
                                 ))}
                         </div>
 
-                        <button
+                        <Button
+                            variant="outline"
+                            size="icon"
                             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                             disabled={currentPage === totalPages}
-                            className="inline-flex items-center justify-center h-8 w-8 rounded border bg-background hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="h-8 w-8"
                         >
                             <ChevronRight className="h-4 w-4" />
-                        </button>
+                        </Button>
                     </div>
                 </div>
             )}
@@ -388,8 +397,8 @@ export default function PayrollPage() {
                                 </select>
                             </div>
                             <div className="flex justify-end gap-2 mt-6">
-                                <button type="button" onClick={() => setIsDialogOpen(false)} className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground">Cancel</button>
-                                <button type="submit" className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90">Generate</button>
+                                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                                <Button type="submit">Generate</Button>
                             </div>
                         </form>
                     </div>
@@ -409,12 +418,9 @@ export default function PayrollPage() {
                                     <span className="text-xs text-muted-foreground">• {viewingRun.payslips?.length || 0} Employees</span>
                                 </div>
                             </div>
-                            <button onClick={() => setViewingRun(null)} className="inline-flex items-center justify-center h-8 w-8 rounded-full hover:bg-muted shrink-0">
-                                <span className="sr-only">Close</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
+                            <Button variant="ghost" size="icon" onClick={() => setViewingRun(null)} className="rounded-full">
+                                <X className="h-5 w-5" />
+                            </Button>
                         </div>
 
                         <div className="rounded-md border overflow-x-auto">
@@ -470,17 +476,17 @@ export default function PayrollPage() {
                         )}
 
                         <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 mt-8">
-                            <button onClick={() => setViewingRun(null)} className="h-10 sm:h-9 px-4 rounded-md border text-sm font-medium hover:bg-accent transition-colors w-full sm:w-auto">Close</button>
+                            <Button variant="outline" onClick={() => setViewingRun(null)}>Close</Button>
                             {!viewingRun.is_posted && can('payroll.manage') && (
-                                <button
+                                <Button
                                     onClick={() => {
                                         handleApprove(viewingRun.id);
                                         setViewingRun(null);
                                     }}
-                                    className="h-10 sm:h-9 px-6 rounded-md bg-primary text-primary-foreground text-sm font-bold shadow-sm hover:bg-primary/90 transition-all w-full sm:w-auto active:scale-95"
+                                    className="font-bold shadow-sm"
                                 >
                                     Approve & Process Payments
-                                </button>
+                                </Button>
                             )}
                         </div>
                     </div>

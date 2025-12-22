@@ -4,6 +4,7 @@ import { getInvoices, getPayments, getStudents, getFiscalYears } from '@/lib/api
 import { Loader2, Search, X, ListFilter } from 'lucide-react';
 import { toNepali } from '@/lib/nepaliDate';
 import { type FiscalYear } from '@/types';
+import { Button } from '@/components/ui/button';
 
 type LedgerEntry = {
     id: string;
@@ -247,15 +248,17 @@ export default function StudentLedgerReport() {
                         }}
                     />
                     {searchQuery && (
-                        <button
+                        <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => {
                                 setSearchQuery('');
                                 setSelectedStudentId('');
                             }}
-                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
+                            className="absolute inset-y-0 right-0 h-full w-9 text-muted-foreground hover:text-foreground"
                         >
                             <X className="h-4 w-4" />
-                        </button>
+                        </Button>
                     )}
 
                     {isSearchFocused && (searchQuery || filteredStudentSearchList.length > 0) && (

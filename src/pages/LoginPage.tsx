@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Loader2, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import GradientText from '@/components/GradientText';
 
 
 function AnimatedBackground({ children }: { children: ReactNode }) {
@@ -150,10 +151,19 @@ export default function LoginPage() {
                     <div className="flex h-24 w-24 items-center justify-center -mb-2">
                         <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
                     </div>
-                    <h1 className="text-2xl font-bold tracking-tight">School Lekha</h1>
-                    <p className="text-sm text-muted-foreground">
-                        Enter your credentials to access the system
-                    </p>
+                    <GradientText
+                        colors={["#40ffaa", "#4079ff", "#40ffaa", "#4079ff", "#40ffaa"]}
+                        animationSpeed={3}
+                        showBorder={false}
+                        className="text-2xl font-bold tracking-tight"
+                    >
+                        <span className="block">School Lekha</span>
+                        <span className="block text-lg font-medium">
+                            विद्यालय लेखा, सजिलै
+                        </span>
+
+                    </GradientText>
+
                 </div>
                 <div className="p-6 pt-0">
                     <form onSubmit={handleLogin} className="space-y-4">

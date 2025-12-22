@@ -4,6 +4,7 @@ import { Loader2, Plus, Pencil, Trash2, Shield, Check } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { type Role, type Permission } from '@/types';
 import { usePermission } from '@/hooks/usePermission';
+import { Button } from '@/components/ui/button';
 
 export default function RolesPage() {
     const { can } = usePermission();
@@ -115,13 +116,12 @@ export default function RolesPage() {
                     <p className="text-muted-foreground">Manage user roles and their associated permissions.</p>
                 </div>
                 {canManage && (
-                    <button
+                    <Button
                         onClick={() => handleOpenModal()}
-                        className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                     >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="mr-2 h-4 w-4" />
                         Create Role
-                    </button>
+                    </Button>
                 )}
             </div>
 
@@ -140,13 +140,13 @@ export default function RolesPage() {
                                 </h3>
                                 {canManage && (
                                     <div className="flex gap-2">
-                                        <button onClick={() => handleOpenModal(role)} className="text-muted-foreground hover:text-primary">
+                                        <Button variant="ghost" size="icon" onClick={() => handleOpenModal(role)} className="h-8 w-8 text-muted-foreground hover:text-primary">
                                             <Pencil className="h-4 w-4" />
-                                        </button>
+                                        </Button>
                                         {role.name !== 'Super Admin' && ( // Prevent deleting Super Admin if desired
-                                            <button onClick={() => handleDelete(role.id)} className="text-destructive hover:text-red-600">
+                                            <Button variant="ghost" size="icon" onClick={() => handleDelete(role.id)} className="h-8 w-8 text-destructive hover:text-red-600">
                                                 <Trash2 className="h-4 w-4" />
-                                            </button>
+                                            </Button>
                                         )}
                                     </div>
                                 )}
@@ -238,21 +238,20 @@ export default function RolesPage() {
                             </div>
 
                             <div className="flex justify-end gap-2 pt-4">
-                                <button
+                                <Button
                                     type="button"
+                                    variant="outline"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="rounded-md px-4 py-2 text-sm font-medium hover:bg-gray-100"
                                 >
                                     Cancel
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="submit"
                                     disabled={saving}
-                                    className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                                 >
-                                    {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     {editingRole ? 'Update Role' : 'Create Role'}
-                                </button>
+                                </Button>
                             </div>
                         </form>
                     </div>

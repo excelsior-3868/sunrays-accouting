@@ -5,6 +5,7 @@ import { getFiscalYears, createFiscalYear, setActiveFiscalYear } from '@/lib/api
 import { type FiscalYear } from '@/types';
 import NepaliDatePicker from '@/components/NepaliDatePicker';
 import { toNepali } from '@/lib/nepaliDate';
+import { Button } from '@/components/ui/button';
 
 
 export default function SettingsPage() {
@@ -123,12 +124,11 @@ export default function SettingsPage() {
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <h2 className="text-lg font-semibold">Fiscal Years</h2>
-                    <button
+                    <Button
                         onClick={() => { setEditingYear(null); setIsDialogOpen(true); }}
-                        className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2"
                     >
                         <Plus className="mr-2 h-4 w-4" /> Add Fiscal Year
-                    </button>
+                    </Button>
                 </div>
 
                 {loading ? (
@@ -160,21 +160,25 @@ export default function SettingsPage() {
                                             </td>
                                             <td className="p-4 align-middle text-right">
                                                 <div className="flex justify-end gap-2 items-center">
-                                                    <button
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
                                                         onClick={() => handleEdit(fy)}
-                                                        className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                                                        className="h-8 w-8 text-blue-600 hover:bg-blue-100"
                                                         title="Edit"
                                                     >
                                                         <Pencil className="h-4 w-4" />
-                                                    </button>
+                                                    </Button>
                                                     {!fy.is_active && !fy.is_closed && (
-                                                        <button
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
                                                             onClick={() => handleSetActive(fy.id)}
-                                                            className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
+                                                            className="h-8 w-8 text-green-600 hover:bg-green-100"
                                                             title="Set Active"
                                                         >
                                                             <CheckCircle className="h-4 w-4" />
-                                                        </button>
+                                                        </Button>
                                                     )}
                                                 </div>
                                             </td>
@@ -240,8 +244,8 @@ export default function SettingsPage() {
                                 </select>
                             </div>
                             <div className="flex justify-end gap-2 mt-6">
-                                <button type="button" onClick={() => setIsDialogOpen(false)} className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground">Cancel</button>
-                                <button type="submit" className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90">{editingYear ? 'Update' : 'Create'}</button>
+                                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                                <Button type="submit">{editingYear ? 'Update' : 'Create'}</Button>
                             </div>
                         </form>
                     </div>

@@ -3,7 +3,8 @@ import { Plus, ChevronRight, ChevronDown, Folder, FileText, Pencil, Trash2 } fro
 import { useToast } from '@/components/ui/use-toast';
 import { getGLHeads, createGLHead, deleteGLHead } from '@/lib/api';
 import { type GLHead, type GLHeadType } from '@/types';
-import { cn } from '@/lib/utils'; // Assuming you have this utility
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 export default function ChartOfAccountsPage() {
     const [glHeads, setGlHeads] = useState<GLHead[]>([]);
@@ -116,9 +117,14 @@ export default function ChartOfAccountsPage() {
                 >
                     <div className="flex-1 flex items-center gap-2">
                         {node.children && node.children.length > 0 ? (
-                            <button onClick={() => toggleExpand(node.id)} className="p-1 hover:bg-muted rounded text-muted-foreground">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => toggleExpand(node.id)}
+                                className="h-6 w-6 p-0 hover:bg-muted"
+                            >
                                 {expandedNodes.has(node.id) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                            </button>
+                            </Button>
                         ) : <span className="w-6" />}
 
                         {node.children && node.children.length > 0 ? <Folder className="h-4 w-4 text-blue-500/80" /> : <FileText className="h-4 w-4 text-muted-foreground" />}
@@ -136,18 +142,22 @@ export default function ChartOfAccountsPage() {
                         </span>
                     </div>
                     <div className="opacity-0 group-hover:opacity-100 flex gap-2">
-                        <button
+                        <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => handleEdit(node)}
-                            className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                            className="h-8 w-8 text-blue-600 hover:bg-blue-100 hover:text-blue-700"
                         >
                             <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => handleDelete(node.id)}
-                            className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                            className="h-8 w-8 text-red-600 hover:bg-red-100 hover:text-red-700"
                         >
                             <Trash2 className="h-4 w-4" />
-                        </button>
+                        </Button>
                     </div>
                 </div>
                 {node.children && node.children.length > 0 && expandedNodes.has(node.id) && (
@@ -164,23 +174,25 @@ export default function ChartOfAccountsPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">Chart of Accounts</h1>
-                <button onClick={() => { setEditingHead(null); setIsDialogOpen(true); }} className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
+                <Button onClick={() => { setEditingHead(null); setIsDialogOpen(true); }}>
                     <Plus className="mr-2 h-4 w-4" /> Add GL Head
-                </button>
+                </Button>
             </div>
 
             <div className="flex gap-2 pb-4 border-b">
                 {['All', 'Income', 'Expense', 'Asset', 'Liability'].map((type) => (
-                    <button
+                    <Button
                         key={type}
+                        variant={selectedType === type ? "default" : "outline"}
                         onClick={() => setSelectedType(type as any)}
                         className={cn(
-                            "px-3 py-1 text-sm rounded-full border transition-colors",
-                            selectedType === type ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted"
+                            "rounded-full h-8",
+                            selectedType !== type && "bg-background hover:bg-muted"
                         )}
+                        size="sm"
                     >
                         {type}
-                    </button>
+                    </Button>
                 ))}
             </div>
 
@@ -236,8 +248,8 @@ export default function ChartOfAccountsPage() {
                             </div>
 
                             <div className="flex justify-end gap-2 mt-6">
-                                <button type="button" onClick={() => setIsDialogOpen(false)} className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground">Cancel</button>
-                                <button type="submit" className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90">{editingHead ? 'Update' : 'Create'}</button>
+                                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                                <Button type="submit">{editingHead ? 'Update' : 'Create'}</Button>
                             </div>
                         </form>
                     </div>

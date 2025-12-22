@@ -5,6 +5,8 @@ import { type GLHead } from '@/types';
 import NepaliDate from 'nepali-date-converter';
 import NepaliDatePicker from '@/components/NepaliDatePicker';
 import SearchableSelect from '@/components/SearchableSelect';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 type ReportMode = 'date' | 'month';
 
@@ -166,7 +168,15 @@ export default function GLHeadReport() {
 
     const monthlyData = useMemo(() => {
         if (!selectedGLHeadId) return [];
-        const glTransactions = transactions.filter(t => t.gl_head_id === selectedGLHeadId);
+
+        let glTransactions: any[] = [];
+        if (selectedGLHeadId === 'ALL_INCOME') {
+            glTransactions = transactions.filter(t => t.type === 'Income');
+        } else if (selectedGLHeadId === 'ALL_EXPENSE') {
+            glTransactions = transactions.filter(t => t.type === 'Expense');
+        } else {
+            glTransactions = transactions.filter(t => t.gl_head_id === selectedGLHeadId);
+        }
 
         return NEPAL_MONTHS_BS.map((monthName, index) => {
             const startBs = new NepaliDate(selectedYear, index, 1);
@@ -207,18 +217,26 @@ export default function GLHeadReport() {
 
             {/* Tabs */}
             <div className="flex gap-2 border-b">
-                <button
+                <Button
+                    variant="ghost"
                     onClick={() => setActiveView('chart')}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeView === 'chart' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                    className={cn(
+                        "rounded-none border-b-2 bg-transparent px-4 py-2 font-medium hover:bg-transparent",
+                        activeView === 'chart' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                    )}
                 >
                     Chart View
-                </button>
-                <button
+                </Button>
+                <Button
+                    variant="ghost"
                     onClick={() => setActiveView('table')}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeView === 'table' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                    className={cn(
+                        "rounded-none border-b-2 bg-transparent px-4 py-2 font-medium hover:bg-transparent",
+                        activeView === 'table' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                    )}
                 >
                     Table Data
-                </button>
+                </Button>
             </div>
 
             {/* Content */}
@@ -230,7 +248,18 @@ export default function GLHeadReport() {
                             <div className="flex-1">
                                 <label className="text-sm font-medium text-muted-foreground mb-1 block">Select GL Head for Monthly Analysis</label>
                                 <SearchableSelect
-                                    options={glHeads.map(h => ({ value: h.id, label: h.code ? `${h.name} (${h.code})` : h.name, group: h.type }))}
+                                    options={[
+                                        ...glHeads.map(h => ({ value: h.id, label: h.code ? `${h.name} (${h.code})` : h.name, group: h.type })),
+                                        { value: 'ALL_INCOME', label: 'All Incomes (Summary)', group: 'Income' },
+                                        { value: 'ALL_EXPENSE', label: 'All Expenses (Summary)', group: 'Expense' }
+                                    ].sort((a, b) => {
+                                        // Custom sort to put "All" options at the top of their groups
+                                        if (a.value === 'ALL_INCOME') return -1;
+                                        if (b.value === 'ALL_INCOME') return 1;
+                                        if (a.value === 'ALL_EXPENSE') return -1;
+                                        if (b.value === 'ALL_EXPENSE') return 1;
+                                        return a.label.localeCompare(b.label);
+                                    })}
                                     value={selectedGLHeadId}
                                     onChange={(val) => setSelectedGLHeadId(val)}
                                     placeholder="Search GL Head..."
@@ -255,7 +284,13 @@ export default function GLHeadReport() {
                         <div className="flex items-center justify-between mb-8">
                             <div className="flex items-center gap-2">
                                 <BarChart3 className="h-5 w-5 text-primary" />
-                                <h3 className="font-semibold text-lg">Month Wise Amount - {glHeads.find(h => h.id === selectedGLHeadId)?.name || 'Select a GL Head'}</h3>
+                                <h3 className="font-semibold text-lg">
+                                    Month Wise Amount - {
+                                        selectedGLHeadId === 'ALL_INCOME' ? 'Total Income Summary' :
+                                            selectedGLHeadId === 'ALL_EXPENSE' ? 'Total Expense Summary' :
+                                                (glHeads.find(h => h.id === selectedGLHeadId)?.name || 'Select a GL Head')
+                                    }
+                                </h3>
                             </div>
                             {selectedGLHeadId && (
                                 <div className="text-sm font-medium px-3 py-1 bg-primary/10 text-primary rounded-full">
@@ -292,7 +327,10 @@ export default function GLHeadReport() {
                                                     </div>
                                                 )}
                                                 <div
-                                                    className={`w-full max-w-[20px] md:max-w-[40px] rounded-t-lg transition-all duration-500 ease-out hover:brightness-110 cursor-pointer ${glHeads.find(h => h.id === selectedGLHeadId)?.type === 'Expense' ? 'bg-red-500 hover:bg-red-400' : 'bg-primary hover:bg-primary/80'}`}
+                                                    className={`w-full max-w-[20px] md:max-w-[40px] rounded-t-lg transition-all duration-500 ease-out hover:brightness-110 cursor-pointer ${selectedGLHeadId === 'ALL_EXPENSE' || glHeads.find(h => h.id === selectedGLHeadId)?.type === 'Expense'
+                                                        ? 'bg-red-500 hover:bg-red-400'
+                                                        : 'bg-primary hover:bg-primary/80'
+                                                        }`}
                                                     style={{
                                                         height: maxMonthlyAmount > 0 ? `${(item.amount / maxMonthlyAmount) * 300}px` : '4px',
                                                         opacity: item.amount === 0 ? 0.3 : 1
@@ -317,18 +355,26 @@ export default function GLHeadReport() {
                     {/* Controls Moved Inside Table Tab */}
                     <div className="flex flex-col md:flex-row gap-4 bg-card p-4 rounded-lg border">
                         <div className="flex rounded-md border bg-muted p-1 h-fit">
-                            <button
+                            <Button
+                                variant="ghost"
                                 onClick={() => setMode('month')}
-                                className={`px-3 py-1 text-sm font-medium rounded-sm transition-all ${mode === 'month' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                                className={cn(
+                                    "px-3 py-1 text-sm font-medium rounded-sm transition-all h-8",
+                                    mode === 'month' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
+                                )}
                             >
                                 By Month
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                                variant="ghost"
                                 onClick={() => setMode('date')}
-                                className={`px-3 py-1 text-sm font-medium rounded-sm transition-all ${mode === 'date' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                                className={cn(
+                                    "px-3 py-1 text-sm font-medium rounded-sm transition-all h-8",
+                                    mode === 'date' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
+                                )}
                             >
                                 Date Range
-                            </button>
+                            </Button>
                         </div>
 
                         <div className="h-8 w-px bg-border hidden md:block" />
