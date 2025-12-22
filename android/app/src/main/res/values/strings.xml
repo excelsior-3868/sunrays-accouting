@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Sunrays Accounting</string>
+    <string name="title_activity_main">Sunrays Accounting</string>
+    <string name="package_name">com.sunrays.accounting</string>
+    <string name="custom_url_scheme">com.sunrays.accounting</string>
+</resources>
