@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Loader2, DollarSign, CreditCard, TrendingUp, TrendingDown, Receipt, Calendar, CalendarDays, Users, UserCog, GraduationCap, Shield, ArrowRight } from 'lucide-react';
+import { Loader2, DollarSign, CreditCard, TrendingUp, TrendingDown, Receipt, Calendar, CalendarDays, Users, UserCog, GraduationCap, Shield } from 'lucide-react';
 import { getInvoices, getPayments, getExpenses, getStudents, getTeachers, getStaffMembers, getUsers } from '@/lib/api';
 import { toNepali, formatNepaliDate, getNepaliFiscalYear } from '@/lib/nepaliDate';
 import { cn } from '@/lib/utils';
